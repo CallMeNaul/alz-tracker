@@ -1,0 +1,10 @@
+fastapi[all]
+pydantic
+torch
+torchvision
+torchaudio
+pytorch-lightning
+torchmetrics
+nibabel
+scipy
+numpy

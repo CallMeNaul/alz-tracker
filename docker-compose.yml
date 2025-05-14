@@ -1,0 +1,73 @@
+version: '3.3'
+
+services:
+  # Cơ sở dữ liệu PostgreSQL
+  postgres:
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
+    container_name: alzheimer-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: alzheimer_diagnosing
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - alzheimer-network
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+
+  # Ứng dụng
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+    container_name: alzheimer-app
+    environment:
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: alzheimer_diagnosing
+    depends_on:
+      - postgres
+    networks:
+      - alzheimer-network
+    volumes:
+      - mri-uploads:/app/uploads
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+
+  # Diagnosing Server
+  diagnosing-server:
+    build:
+      context: ./diagnosing_server
+      dockerfile: Dockerfile
+    container_name: alzheimer-diagnosing-server
+    environment:
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - mri-uploads:/app/uploads
+    networks:
+      - alzheimer-network
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    depends_on:
+      - app
+
+# Mạng
+networks:
+  alzheimer-network:
+    driver: bridge
+
+# Volumes
+volumes:
+  postgres-data:
+    driver: local
+  mri-uploads:
+    driver: local

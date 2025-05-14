@@ -1,0 +1,112 @@
+
+# WORKFLOW CHO NGƯỜI DÙNG CỦA ALZTRACKER
+
+## TỔNG QUAN HỆ THỐNG
+AlzTracker là nền tảng quản lý và theo dõi chẩn đoán bệnh Alzheimer, kết nối giữa bác sĩ và bệnh nhân. Hệ thống có 3 loại người dùng chính: Admin, Bác sĩ và Bệnh nhân - mỗi vai trò có quyền hạn và workflow riêng.
+
+## 1. WORKFLOW NGƯỜI DÙNG ADMIN
+
+### Đăng nhập hệ thống
+- Đăng nhập hệ thống với tài khoản admin (mặc định: alzadmin@gmail.com)
+- Truy cập vào Dashboard quản lý hệ thống
+
+### Quản lý tài khoản bác sĩ
+- Tạo tài khoản cho bác sĩ mới (tại /admin/doctor-register)
+- Quản lý thông tin và quyền hạn của bác sĩ
+- Vô hiệu hóa tài khoản bác sĩ nếu cần thiết
+
+### Giám sát hệ thống
+- Theo dõi số liệu tổng quan về bệnh nhân trong hệ thống
+- Xem báo cáo thống kê về chẩn đoán và tình trạng bệnh nhân
+- Quản lý các phản hồi và vấn đề phát sinh từ người dùng
+
+## 2. WORKFLOW BÁC SĨ
+
+### Đăng nhập và quản lý tài khoản
+- Đăng nhập hệ thống bằng tài khoản được Admin cấp
+- Cập nhật thông tin cá nhân trong phần Hồ sơ (Profile)
+
+### Quản lý bệnh nhân
+- Xem danh sách bệnh nhân được phân công chăm sóc
+- Thêm bệnh nhân mới vào hệ thống
+- Xem thông tin chi tiết của từng bệnh nhân
+
+### Chẩn đoán và theo dõi
+- Nhập dữ liệu chẩn đoán mới cho bệnh nhân (điểm MMSE, CDR)
+- Theo dõi tiến triển của bệnh nhân qua thời gian
+- Xem biểu đồ và số liệu thống kê về tình trạng bệnh nhân
+
+### Quản lý hồ sơ y tế
+- Cập nhật tiến trình điều trị (/progress-notes)
+- Thêm chẩn đoán mới cho bệnh nhân (/diagnosis)
+- Quản lý lịch sử y tế của bệnh nhân (/medical-history)
+- Tạo báo cáo về tình trạng bệnh nhân (/reports)
+
+### Tương tác với bệnh nhân
+- Trả lời câu hỏi của bệnh nhân trên diễn đàn (/forum)
+- Tạo lời nhắc cho bệnh nhân (/reminders)
+- Xem ảnh MRI của bệnh nhân để hỗ trợ chẩn đoán
+
+## 3. WORKFLOW BỆNH NHÂN
+
+### Đăng ký và đăng nhập
+- Đăng ký tài khoản bệnh nhân mới (/patient-register)
+- Chọn bác sĩ điều trị từ danh sách
+- Đăng nhập vào hệ thống bằng tài khoản đã đăng ký
+
+### Theo dõi tình trạng bệnh
+- Xem Dashboard cá nhân với các thông số sức khỏe
+- Theo dõi chỉ số MMSE và CDR theo thời gian
+- Xem kết quả chẩn đoán và đánh giá từ bác sĩ
+
+### Quản lý hồ sơ y tế cá nhân
+- Xem ghi chú tiến trình từ bác sĩ (/progress-notes)
+- Xem chẩn đoán cập nhật (/diagnosis)
+- Truy cập lịch sử y tế (/medical-history)
+- Xem báo cáo sức khỏe (/reports)
+
+### Tải lên và quản lý ảnh MRI
+- Tải lên ảnh chụp MRI mới (/my-mri-scans)
+- Xem các ảnh MRI đã tải lên trước đó
+- Theo dõi nhận xét của bác sĩ về ảnh MRI
+
+### Tương tác với bác sĩ
+- Đặt câu hỏi cho bác sĩ trên diễn đàn (/forum)
+- Xem và quản lý lời nhắc (/reminders)
+- Nhận thông báo về lịch hẹn và hướng dẫn từ bác sĩ
+
+## 4. QUY TRÌNH CHUNG
+
+### Quản lý thông báo
+- Nhận thông báo về cập nhật mới trong hệ thống
+- Thông báo về tương tác mới (bình luận, trả lời)
+- Nhắc nhở về lịch hẹn và nhiệm vụ cần thực hiện
+
+### Bảo mật và quyền riêng tư
+- Bệnh nhân chỉ có thể xem thông tin của chính mình
+- Bác sĩ chỉ có thể xem thông tin của bệnh nhân được phân công
+- Admin có quyền quản lý toàn bộ hệ thống nhưng không can thiệp vào dữ liệu y tế cụ thể
+
+### Luồng dữ liệu
+- Bệnh nhân cung cấp thông tin và ảnh MRI
+- Bác sĩ đánh giá, chẩn đoán và cập nhật hồ sơ
+- Hệ thống lưu trữ và hiển thị dữ liệu theo quyền hạn của từng người dùng
+
+## 5. TÍNH NĂNG THEO VAI TRÒ
+
+### Admin
+- Quản lý người dùng (thêm, sửa, xóa)
+- Giám sát hoạt động hệ thống
+- Quản lý cấu hình và tham số hệ thống
+
+### Bác sĩ
+- Quản lý danh sách bệnh nhân
+- Nhập và cập nhật dữ liệu chẩn đoán
+- Tạo báo cáo và lời nhắc
+- Phân tích dữ liệu và biểu đồ
+
+### Bệnh nhân
+- Xem thông tin chẩn đoán cá nhân
+- Tải lên ảnh MRI
+- Tương tác với bác sĩ qua diễn đàn
+- Quản lý lời nhắc và lịch hẹn
