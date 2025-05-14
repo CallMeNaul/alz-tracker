@@ -16,10 +16,11 @@ interface MriScan {
   fileName: string;
   fileSize: number;
   uploadDate: Date;
-  downloadURL: string;
+  adPro: number;
+  cnPro: number;
   status: "pending" | "processed" | "analyzed";
   mmseScore?: number;
-  diagnosis?: "AD" | "MCI" | "CN";
+  diagnosis?: "AD (Alzheimer's Disease)" | "MCI" | "CN (Normal)";
   confidence?: number;
 }
 
@@ -71,11 +72,12 @@ const DoctorMriManagement = () => {
           fileName: data.fileName,
           fileSize: data.fileSize,
           uploadDate: data.uploadDate?.toDate() || new Date(),
-          downloadURL: data.downloadURL || "",
+          adPro: data.adProbability,
+          cnPro: data.cnProbability,
           status: data.status,
           mmseScore: data.mmseScore,
           diagnosis: data.diagnosis,
-          confidence: data.confidence || 0.75,
+          confidence: data.confidence,
         });
       });
       

@@ -16,10 +16,11 @@ interface MriScan {
   fileName: string;
   fileSize: number;
   uploadDate: Date;
-  downloadURL: string;
+  adPro: number;
+  cnPro: number;
   status: "pending" | "processed" | "analyzed";
   mmseScore?: number;
-  diagnosis?: "AD" | "MCI" | "CN";
+  diagnosis?: "AD (Alzheimer's Disease)" | "MCI" | "CN (Normal)";
   confidence?: number;
 }
 
@@ -30,11 +31,11 @@ interface MriScanResultSheetProps {
 }
 
 const MriScanResultSheet = ({ scan, isOpen, onOpenChange }: MriScanResultSheetProps) => {
-  const getDiagnosisLabel = (diagnosis?: "AD" | "MCI" | "CN") => {
+  const getDiagnosisLabel = (diagnosis?: "AD (Alzheimer's Disease)" | "MCI" | "CN (Normal)") => {
     if (!diagnosis) return null;
     
     switch (diagnosis) {
-      case "AD":
+      case "AD (Alzheimer's Disease)":
         return {
           label: "Alzheimer (Bệnh nặng)",
           colorClass: "bg-red-100 text-red-800 border-red-300",
@@ -44,7 +45,7 @@ const MriScanResultSheet = ({ scan, isOpen, onOpenChange }: MriScanResultSheetPr
           label: "Suy giảm nhận thức nhẹ (Giai đoạn đầu)",
           colorClass: "bg-yellow-100 text-yellow-800 border-yellow-300",
         };
-      case "CN":
+      case "CN (Normal)":
         return {
           label: "Bình thường",
           colorClass: "bg-green-100 text-green-800 border-green-300",

@@ -97,21 +97,21 @@ const MriUpload = ({ onUploadComplete }: MriUploadProps) => {
     return Math.floor(Math.random() * 9) + 21;
   };
 
-  const getDiagnosisFromMmse = (score: number): "AD" | "MCI" | "CN" => {
+  const getDiagnosisFromMmse = (score: number): "AD (Alzheimer's Disease)" | "MCI" | "CN" => {
     if (score >= 21 && score <= 23) {
-      return "AD"; // Alzheimer's Disease
+      return "AD (Alzheimer's Disease)"; // Alzheimer's Disease
     } else if (score >= 24 && score <= 26) {
       return "MCI"; // Mild Cognitive Impairment
     } else {
-      return "CN"; // Cognitively Normal
+      return "CN (Normal)"; // Cognitively Normal
     }
   };
 
-  const getStatusFromDiagnosis = (diagnosis: "AD" | "MCI" | "CN"): "error" | "warning" | "success" => {
+  const getStatusFromDiagnosis = (diagnosis: "AD (Alzheimer's Disease)" | "MCI" | "CN (Normal)"): "error" | "warning" | "success" => {
     switch (diagnosis) {
-      case "AD": return "error";
+      case "AD (Alzheimer's Disease)": return "error";
       case "MCI": return "warning";
-      case "CN": return "success";
+      case "CN (Normal)": return "success";
     }
   };
 
@@ -211,24 +211,24 @@ const MriUpload = ({ onUploadComplete }: MriUploadProps) => {
     }
   };
 
-  const getDiagnosisLabel = (diagnosis: "AD" | "MCI" | "CN") => {
+  const getDiagnosisLabel = (diagnosis: "AD (Alzheimer's Disease)" | "MCI" | "CN (Normal)") => {
     switch (diagnosis) {
-      case "AD":
+      case "AD (Alzheimer's Disease)":
         return "Alzheimer (Bệnh nặng)";
       case "MCI":
         return "Suy giảm nhận thức nhẹ (Giai đoạn đầu)";
-      case "CN":
+      case "CN (Normal)":
         return "Bình thường";
     }
   };
 
-  const getDiagnosisDescription = (diagnosis: "AD" | "MCI" | "CN") => {
+  const getDiagnosisDescription = (diagnosis: "AD (Alzheimer's Disease)" | "MCI" | "CN (Normal)") => {
     switch (diagnosis) {
-      case "AD":
+      case "AD (Alzheimer's Disease)":
         return "Kết quả cho thấy các dấu hiệu của bệnh Alzheimer ở mức độ nặng. Cần tham khảo ý kiến bác sĩ ngay lập tức để được điều trị.";
       case "MCI":
         return "Phát hiện dấu hiệu suy giảm nhận thức nhẹ ở giai đoạn đầu. Cần theo dõi và kiểm tra định kỳ với bác sĩ.";
-      case "CN":
+      case "CN (Normal)":
         return "Không phát hiện dấu hiệu bất thường. Tiếp tục duy trì lối sống lành mạnh và kiểm tra định kỳ.";
     }
   };
@@ -344,9 +344,9 @@ const MriUpload = ({ onUploadComplete }: MriUploadProps) => {
                         </div>
                       )}
 
-                      <p className="text-sm text-gray-600 mt-2">
+                      <h3 className="text-sm text-gray-600 mt-2">
                         {diagnosisResult.diagnosis && getDiagnosisDescription(diagnosisResult.diagnosis)}
-                      </p>
+                      </h3>
                     </div>
                   </div>
                 </div>

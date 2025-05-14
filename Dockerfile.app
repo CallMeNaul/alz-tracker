@@ -16,7 +16,7 @@ COPY . .
 RUN npm run build
 
 # Giai đoạn sản xuất
-FROM node:18-alpine
+FROM node:18-alpine as production
 
 WORKDIR /app
 
