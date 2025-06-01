@@ -1,4 +1,4 @@
-
+/*
 -- Tạo bảng cho Ứng dụng chẩn đoán Alzheimer
 
 -- Bảng Auth
@@ -52,3 +52,4 @@ ON CONFLICT (email) DO NOTHING;
 INSERT INTO users (id, email, display_name, role) VALUES 
 ('admin123', 'admin@example.com', 'Admin', 'admin')
 ON CONFLICT (email) DO NOTHING;
+*/

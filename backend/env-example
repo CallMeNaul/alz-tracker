@@ -1,0 +1,23 @@
+# Cấu hình Backend
+PORT=8888
+NODE_ENV=development
+
+# Cấu hình Database
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=alzheimer_diagnosing
+
+# Cấu hình Firebase
+FIREBASE_API_KEY=AIzaSyAp19vXErWWy8NusrMss2CelFKWO4PDtOM
+FIREBASE_AUTH_DOMAIN=alzheimer-diagnosing.firebaseapp.com
+FIREBASE_PROJECT_ID=alzheimer-diagnosing
+FIREBASE_STORAGE_BUCKET=alzheimer-diagnosing.appspot.com
+FIREBASE_MESSAGING_SENDER_ID=366076077234
+FIREBASE_APP_ID=1:366076077234:web:944e18ae1575ec2e13d5ab
+FIREBASE_MEASUREMENT_ID=G-2CQ52VQT1W
+
+# Server Configuration
+SERVER_PORT=8888
+UPLOAD_DIR=uploads 

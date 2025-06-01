@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -8,37 +10,94 @@ const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const { initializeApp } = require('firebase/app');
 const { getFirestore, collection, getDocs } = require('firebase/firestore');
+const crypto = require('crypto');
 
-// Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyAp19vXErWWy8NusrMss2CelFKWO4PDtOM",
-  authDomain: "alzheimer-diagnosing.firebaseapp.com",
-  projectId: "alzheimer-diagnosing",
-  storageBucket: "alzheimer-diagnosing.appspot.com",
-  messagingSenderId: "366076077234",
-  appId: "1:366076077234:web:944e18ae1575ec2e13d5ab",
-  measurementId: "G-2CQ52VQT1W"
+// Cấu hình CORS
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Danh sách các domain được phép truy cập
+    const allowedOrigins = [
+      process.env.FRONTEND_URL, // URL của frontend chính
+      'http://localhost:3000',  // URL development
+      'https://alzheimers-data-hub.com', // URL production
+      'https://admin.alzheimers-data-hub.com' // URL admin panel
+    ].filter(Boolean); // Lọc bỏ các giá trị undefined/null
+
+    // Cho phép requests từ Postman/curl trong development
+    if (!origin && process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Các HTTP methods được phép
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true, // Cho phép gửi cookies
+  maxAge: 86400, // Cache CORS preflight requests trong 24 giờ
+  exposedHeaders: ['Content-Disposition'], // Headers cho phép client đọc
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 };
 
-// Initialize Firebase
+// Cấu hình Firebase
+const firebaseConfig = {
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.FIREBASE_APP_ID,
+  measurementId: process.env.FIREBASE_MEASUREMENT_ID
+};
+
+// Khởi tạo Firebase
 const firebaseApp = initializeApp(firebaseConfig);
 const firestoreDb = getFirestore(firebaseApp);
 
 // Cấu hình ứng dụng
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT;
 
 // Middleware
-app.use(cors());
-app.use(express.json());
+app.use(cors(corsOptions));
+app.use(express.json({ limit: '1mb' })); // Giới hạn kích thước JSON request
+
+// Middleware bảo mật
+app.use((req, res, next) => {
+  // Thêm các security headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.setHeader('Content-Security-Policy', "default-src 'self'");
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+  // Xóa các headers không cần thiết
+  res.removeHeader('X-Powered-By');
+
+  next();
+});
+
+// Rate limiting middleware
+const rateLimit = require('express-rate-limit');
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 phút
+  max: 100, // Giới hạn mỗi IP
+  message: 'Quá nhiều yêu cầu từ IP này, vui lòng thử lại sau 15 phút'
+});
+app.use('/api/', limiter);
 
 // Kết nối đến PostgreSQL
 const pool = new Pool({
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'alzheimer_diagnosing',
+  user: process.env.DB_USER, // || 'postgres',
+  password: process.env.DB_PASSWORD, // || 'postgres',
+  host: process.env.DB_HOST, // || 'localhost',
+  port: parseInt(process.env.DB_PORT), // || '5432'),
+  database: process.env.DB_NAME, // || 'alzheimer_diagnosing',
   ssl: false//process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
@@ -131,7 +190,7 @@ const initializeDatabase = async () => {
         file_name VARCHAR(255),
         file_size INTEGER,
         gender VARCHAR(10) CHECK (gender IN ('male', 'female')),
-        mmse_score INTEGER,
+        mmse_score FLOAT,
         status VARCHAR(50),
         upload_date TIMESTAMP,
         user_id VARCHAR(255) REFERENCES users(id)
@@ -184,11 +243,72 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
+    // Sanitize filename and add timestamp
+    const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+    cb(null, `${Date.now()}-${sanitizedName}`);
   }
 });
 
-const upload = multer({ storage });
+// Kiểm tra loại file
+const fileFilter = (req, file, cb) => {
+  // Chỉ cho phép file DICOM và một số định dạng ảnh y tế phổ biến
+  const allowedMimeTypes = [
+    'application/dicom',
+    'image/dicom',
+    'image/nii',
+    'image/nii.gz',
+    'image/x-nifti',
+    'image/x-minc'
+  ];
+
+  if (allowedMimeTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Không hỗ trợ định dạng file này. Chỉ chấp nhận file DICOM và NIfTI.'), false);
+  }
+};
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 100 * 1024 * 1024, // Giới hạn 100MB
+    files: 1 // Chỉ cho phép upload 1 file mỗi lần
+  }
+});
+
+// Middleware xử lý lỗi upload
+const handleUploadError = (error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: 'File quá lớn. Kích thước tối đa là 100MB.' });
+    }
+    return res.status(400).json({ error: `Lỗi upload: ${error.message}` });
+  }
+  next(error);
+};
+
+// Hàm tạo số ngẫu nhiên an toàn trong khoảng [min, max]
+const secureRandomNumber = (min, max) => {
+  const range = max - min + 1;
+  const bytesNeeded = Math.ceil(Math.log2(range) / 8);
+  const maxValid = Math.floor((256 ** bytesNeeded) / range) * range - 1;
+
+  let randomValue;
+  do {
+    randomValue = crypto.randomBytes(bytesNeeded).reduce((acc, byte, i) =>
+      acc + (byte << (8 * i)), 0);
+  } while (randomValue > maxValid);
+
+  return min + (randomValue % range);
+};
+
+// Hàm tạo số thập phân ngẫu nhiên an toàn trong khoảng [min, max]
+const secureRandomFloat = (min, max) => {
+  const buffer = crypto.randomBytes(8);
+  const randomValue = buffer.readDoubleLE() / Number.MAX_VALUE;
+  return min + (randomValue * (max - min));
+};
 
 // API AUTH
 // Đăng ký
@@ -209,8 +329,8 @@ app.post('/api/auth/register', async (req, res) => {
     // Mã hóa mật khẩu
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Tạo ID duy nhất
-    const uid = `user_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    // Tạo ID duy nhất sử dụng UUID v4 (cryptographically secure)
+    const uid = uuidv4();
 
     // Tạo người dùng trong bảng auth
     await query(
@@ -345,11 +465,14 @@ app.get('/api/diagnostics', async (req, res) => {
 
 // API MRI
 // Tải lên ảnh MRI
-app.post('/api/mri/upload', upload.single('mriScan'), async (req, res) => {
+app.post('/api/mri/upload', upload.single('mriScan'), handleUploadError, async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Không có tệp nào được tải lên' });
     }
+
+    // Kiểm tra virus/malware (giả định có một service riêng)
+    // await scanFile(req.file.path);
 
     const { userId } = req.body;
     const id = uuidv4();
@@ -370,13 +493,12 @@ app.post('/api/mri/upload', upload.single('mriScan'), async (req, res) => {
         [id]
       );
 
-      // Mô phỏng phân tích
+      // Mô phỏng phân tích với số ngẫu nhiên an toàn
       setTimeout(async () => {
-        // Kết quả chẩn đoán ngẫu nhiên để minh họa
         const diagnoses = ['AD', 'MCI', 'CN'];
-        const diagnosis = diagnoses[Math.floor(Math.random() * diagnoses.length)];
-        const mmseScore = Math.floor(Math.random() * 30);
-        const confidence = Math.random() * 0.5 + 0.5; // 0.5-1.0
+        const diagnosis = diagnoses[secureRandomNumber(0, diagnoses.length - 1)];
+        const mmseScore = secureRandomNumber(0, 30);
+        const confidence = secureRandomFloat(0.5, 1.0);
 
         await query(
           `UPDATE mri_scans SET 

@@ -5,16 +5,16 @@ import { Pool } from 'pg';
 // Configuration for local development and production
 const config = {
   development: {
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'postgres',
-    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER, // || 'postgres',
+    password: process.env.DB_PASSWORD, // || 'postgres',
+    host: process.env.DB_HOST, // || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432'),
-    database: process.env.DB_NAME || 'alzheimer_diagnosing',
+    database: process.env.DB_NAME, // || 'alzheimer_diagnosing',
     ssl: false
-/*  },
-  production: {
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }*/
+    /*  },
+      production: {
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false }*/
   }
 };
 
@@ -126,7 +126,7 @@ export const dbService = {
       );
       return result.rows;
     },
-    
+
     // Get diagnostics by patient name
     async getDiagnosticsByPatientName(patientName: string) {
       const result = await query(
@@ -135,7 +135,7 @@ export const dbService = {
       );
       return result.rows;
     },
-    
+
     // Get all diagnostics
     async getAllDiagnostics() {
       const result = await query(

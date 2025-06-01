@@ -1,0 +1,478 @@
+PIPELINE DATAHUB: dòng 5
+PIPELINE DIAGNOSING SERVER: dòng 163
+PIPELINE DEPLOY: dòng 420
+
+TRIỂN KHAI PIPELINE JENKINS - ALZHEIMER DATA HUB
+==============================================
+
+BIẾN MÔI TRƯỜNG CHÍNH:
+- BUILD_SCM: https://github.com/CallMeNaul/alzheimers-data-hub.git
+- DEPLOY_SCM: https://github.com/CallMeNaul/alztrack-deployment.git
+- DOCKER_USER: callmenaul
+- DOCKER_IMAGE: alzheimer-app
+- DOCKER_IMAGE_BACKEND: alzheimer-backend
+- DOCKER_TAG: vX.0 (X là số build)
+- SONARQUBE_URL: http://10.0.2.4:9000
+
+1. THÔNG TIN CHUNG (Info)
+   - Mục đích: Kiểm tra và hiển thị thông tin môi trường triển khai
+   - Các lệnh thực thi:
+     + whoami: Xác định người dùng đang thực thi pipeline
+     + pwd: Hiển thị đường dẫn thư mục hiện tại
+     + ls: Liệt kê các file trong thư mục
+
+2. CHECKOUT MÃ NGUỒN (Checkout)
+   - Mục đích: Lấy mã nguồn mới nhất từ repository
+   - Các bước thực hiện:
+     + cleanWs(): Xóa sạch workspace để tránh xung đột
+     + Checkout từ branch 'main' với credentials 'login-github'
+   - Repository: ${BUILD_SCM}
+   - Branch: main
+
+3. KIỂM TRA THAY ĐỔI (Check Changes)
+   - Mục đích: Phân tích và phân loại các thay đổi trong code
+   - Cơ chế kiểm tra:
+     + Sử dụng git diff --name-only HEAD~1 HEAD để lấy danh sách file thay đổi
+     + Kiểm tra Jenkinsfile:
+       * Nếu chỉ có Jenkinsfile thay đổi → Pipeline kết thúc thành công
+     + Phân loại thay đổi theo pattern:
+       * Backend: ^backend/
+       * Frontend/App: Các file còn lại (trừ Jenkinsfile)
+   - Lưu kết quả vào biến môi trường:
+     + env.BACKEND_CHANGES
+     + env.APP_CHANGES
+
+4. PHÂN TÍCH SONARQUBE (SonarQube Analysis)
+   - Điều kiện chạy: Có thay đổi ngoài Jenkinsfile
+   - Cấu hình SonarQube:
+     + Project Key: alztracker
+     + Sources: Toàn bộ project (.)
+     + Server: ${SONARQUBE_URL}
+     + Token: Được lưu trong credentials 'sonarqube-token'
+   - Quy trình:
+     1. Chạy sonar-scanner với các tham số cấu hình
+     2. Đợi và kiểm tra Quality Gate
+     3. Pipeline tiếp tục ngay cả khi Quality Gate thất bại
+
+5. QUÉT DEPENDENCIES (Scan Dependencies)
+   - Điều kiện chạy: Có thay đổi ngoài Jenkinsfile
+   - Các bước quét:
+     1. Cài đặt dependencies:
+        + npm install
+     2. Kiểm tra bảo mật:
+        + npm audit (báo cáo lỗ hổng bảo mật)
+        + npm run lint (kiểm tra code style)
+     3. OWASP Dependency Check:
+        + Tham số: -s . -f HTML --prettyPrint --failOnCVSS 7 --enableRetired
+        + Tạo báo cáo HTML: dependency-check-report.html
+     4. Kiểm tra package lỗi thời:
+        + npm outdated
+     5. Đánh giá mức độ nghiêm trọng của lỗ hổng
+
+6. QUÉT FILESYSTEM BẰNG TRIVY (Trivy Filesystem Scan)
+   - Điều kiện chạy: Có thay đổi ngoài Jenkinsfile
+   - Cấu hình Trivy:
+     + Cache directory: /root/.cache/
+     + Severity: HIGH,CRITICAL
+     + Exit code: 1 nếu phát hiện lỗ hổng
+   - Output: Lưu kết quả vào file vulnerabilities.txt
+
+7. BUILD VÀ PUSH DOCKER IMAGES
+   - Xác thực Docker Hub:
+     + Sử dụng credentials 'login-dockerhub'
+   - Quy trình Backend (nếu có thay đổi):
+     1. Build: docker build -t ${DOCKER_USER}/${DOCKER_IMAGE_BACKEND}:${DOCKER_TAG} -f backend/Dockerfile .
+     2. Push: docker push ${DOCKER_USER}/${DOCKER_IMAGE_BACKEND}:${DOCKER_TAG}
+   - Quy trình Frontend/App (nếu có thay đổi):
+     1. Build: docker build -t ${APP_TAG} .
+     2. Push: docker push ${APP_TAG}
+
+8. QUÉT DOCKER IMAGES BẰNG TRIVY (Trivy Image Scan)
+   - Xác thực GitHub Container Registry:
+     + Sử dụng credentials 'login-ghcr'
+   - Cấu hình quét:
+     + Cache directory: /root/.cache/
+     + Severity: HIGH,CRITICAL
+     + Timeout: 45 phút
+     + Ignore unfixed vulnerabilities
+   - Quét riêng cho từng image (backend/app) nếu có thay đổi
+   - Output: Lưu kết quả vào file app_vulnerabilities.txt và backend_vulnerabilities.txt
+
+9. CHUẨN BỊ TRIỂN KHAI (Cleanup & Checkout Deploy)
+   - Xóa workspace hiện tại: cleanWs()
+   - Clone repository triển khai:
+     + Repository: ${DEPLOY_SCM}
+     + Branch: main
+     + Credentials: 'login-github'
+
+10. CẤU HÌNH GIT (Setup Git Configuration)
+    - Kiểm tra branch hiện tại: git rev-parse --abbrev-ref HEAD
+    - Chuyển sang branch main nếu cần: git checkout main
+    - Đảm bảo làm việc trên branch chính xác trước khi deploy
+
+11. TRIỂN KHAI LÊN PRODUCTION (Deploy to Production)
+    - Cập nhật file docker-compose.yml:
+      + Thay đổi tag của image backend (nếu có)
+      + Thay đổi tag của image app (nếu có)
+    - Quy trình git:
+      1. git add docker-compose.yml
+      2. git status (kiểm tra thay đổi)
+      3. git commit -m "Update deployment file to use version ${DOCKER_TAG}"
+      4. git push origin main
+
+12. HOÀN TẤT (Post Actions)
+    - Cleanup đăng nhập:
+      + docker logout
+      + docker logout ghcr.io
+    - Dọn dẹp images:
+      + Xóa các image backend cũ (khác tag hiện tại)
+      + Xóa các image app cũ (khác tag hiện tại)
+    - Thông báo kết quả:
+      + Success: "✅ Pipeline completed successfully!"
+      + Failure: "❌ Pipeline failed!"
+
+TÍNH NĂNG BẢO MẬT VÀ KIỂM SOÁT:
+1. Quản lý Credentials:
+   - login-github: Truy cập GitHub repositories
+   - login-dockerhub: Push images lên Docker Hub
+   - login-ghcr: Truy cập GitHub Container Registry
+   - sonarqube-token: Xác thực với SonarQube
+   - login-sonarqube: Kiểm tra Quality Gate
+
+2. Kiểm Soát Phiên Bản:
+   - Sử dụng tag version theo số build
+   - Lưu trữ song song cả backend và frontend
+   - Backup tự động các version cũ
+
+3. Quy Trình Bảo Mật:
+   - SonarQube: Phân tích chất lượng code
+   - OWASP: Kiểm tra dependencies
+   - Trivy: Quét filesystem và container
+   - npm audit: Kiểm tra package vulnerabilities
+
+4. Xử Lý Lỗi:
+   - Ghi log chi tiết mỗi bước
+   - Thông báo lỗi cụ thể
+   - Cơ chế rollback khi cần
+
+5. Tối Ưu Hiệu Suất:
+   - Cleanup tự động
+   - Xóa các image không cần thiết
+   - Tối ưu cache trong quá trình build 
+
+TRIỂN KHAI PIPELINE JENKINS - ALZHEIMER DIAGNOSING SERVER
+
+THÔNG TIN MÔI TRƯỜNG (ENVIRONMENT VARIABLES):
+- BUILD_SCM: https://github.com/CallMeNaul/alztracker-diagnosing_server.git
+  + Repository chứa mã nguồn chính của ứng dụng
+  + Được sử dụng trong giai đoạn Checkout để lấy mã nguồn
+
+- DEPLOY_SCM: https://github.com/CallMeNaul/alztrack-deployment.git
+  + Repository chứa cấu hình deployment
+  + Được sử dụng trong giai đoạn Deploy để cập nhật cấu hình
+
+- DOCKER_USER: callmenaul
+  + Tên người dùng Docker Hub
+  + Dùng để xây dựng tên image và push lên registry
+
+- DOCKER_IMAGE: alzheimer-diagnosing-server
+  + Tên image Docker của ứng dụng
+  + Kết hợp với DOCKER_USER tạo thành tên đầy đủ: callmenaul/alzheimer-diagnosing-server
+
+- DOCKER_TAG: vX.0 (X là số build)
+  + Version của image, tự động tăng theo số build
+  + Ví dụ: v1.0, v2.0, v3.0,...
+
+- DEPLOYMENT_FILE: docker-compose.yml
+  + File cấu hình Docker Compose cho deployment
+  + Chứa thông tin về services, networks, volumes,...
+
+- SCAN_OUTPUT: vulnerabilities.txt
+  + File lưu kết quả quét bảo mật
+  + Được sử dụng bởi Trivy trong các bước scan
+
+- DEPLOY_BRANCH: main
+  + Branch chính cho deployment
+  + Mọi thay đổi deployment đều được push lên branch này
+
+CÁC GIAI ĐOẠN THỰC HIỆN (STAGES):
+
+1. Info (Thông tin hệ thống)
+   Mục đích: Kiểm tra và xác nhận môi trường thực thi pipeline
+   Các lệnh thực hiện:
+   - whoami: Hiển thị user đang thực thi pipeline
+   - pwd: Hiển thị đường dẫn thư mục hiện tại
+   - ls: Liệt kê các file trong thư mục
+   Ý nghĩa: Giúp debug khi có vấn đề về permissions hoặc đường dẫn
+
+2. Checkout (Lấy mã nguồn)
+   Mục đích: Chuẩn bị mã nguồn mới nhất cho quá trình build
+   Các bước:
+   - cleanWs(): Xóa sạch workspace để tránh xung đột
+   - Sử dụng GitSCM để clone repository:
+     + URL: BUILD_SCM
+     + Branch: main
+     + Credentials: login-github (SSH key hoặc username/password)
+   Kết quả: Có mã nguồn mới nhất trong workspace
+
+3. Check Changes (Kiểm tra thay đổi)
+   Mục đích: Tối ưu hóa pipeline bằng cách kiểm tra phạm vi thay đổi
+   Cách thực hiện:
+   - Sử dụng git diff để so sánh với commit trước
+   - Phân tích danh sách file thay đổi
+   Xử lý đặc biệt:
+   - Nếu chỉ có Jenkinsfile thay đổi:
+     + Set currentBuild.result = 'SUCCESS'
+     + Set env.ONLY_JENKINSFILE_CHANGED = 'true'
+     + Bỏ qua các stage còn lại
+   Lý do: Tránh chạy không cần thiết các bước build và deploy
+
+4. Lint Backend (Kiểm tra chất lượng code)
+   Mục đích: Đảm bảo chất lượng và tiêu chuẩn code Python
+   Công cụ: pylint
+   Các bước:
+   - Cài đặt pylint thông qua pip
+   - Chạy pylint trên file backend.py
+   Xử lý lỗi:
+   - Sử dụng || true để không dừng pipeline khi có warning
+   - Log kết quả để review sau
+   Điều kiện: Chỉ chạy khi có thay đổi ngoài Jenkinsfile
+
+5. Update Model (Cập nhật model AI)
+   Mục đích: Cập nhật model machine learning mới nhất
+   Công cụ: rclone
+   Các bước:
+   - Đọc đường dẫn model từ file model.txt (dòng đầu tiên)
+   - Sử dụng rclone để copy từ Google Drive
+   Cấu hình:
+   - Yêu cầu cấu hình rclone với Google Drive
+   - Đường dẫn model được lưu trong model.txt
+   Kết quả: Model mới được tải về workspace
+
+6. Trivy Filesystem Scan (Quét bảo mật hệ thống file)
+   Mục đích: Phát hiện các lỗ hổng bảo mật trong mã nguồn
+   Công cụ: Trivy
+   Cấu hình scan:
+   - Severity: HIGH, CRITICAL (chỉ quét lỗ hổng nghiêm trọng)
+   - Cache directory: /root/.cache/
+   - No progress: Tắt hiển thị thanh tiến trình
+   Kết quả:
+   - Lưu vào file vulnerabilities.txt
+   - Hiển thị kết quả quét
+   Xử lý: Tiếp tục pipeline ngay cả khi phát hiện lỗ hổng
+
+7. Validate Dockerfile (Kiểm tra Dockerfile)
+   Mục đích: Đảm bảo Dockerfile tuân thủ best practices
+   Công cụ: hadolint
+   Các bước kiểm tra:
+   - Cú pháp và cấu trúc Dockerfile
+   - Xác định và log base image
+   Xử lý kết quả:
+   - Log warnings và errors
+   - Tiếp tục ngay cả khi có lỗi (|| true)
+   Thông tin thu thập:
+   - Base image được sử dụng
+   - Các vi phạm best practices
+
+8. Build and Push Docker Image (Tạo và đẩy image)
+   Mục đích: Tạo container image và publish lên registry
+   Xác thực:
+   - Sử dụng credentials 'login-dockerhub'
+   - Login vào Docker Hub qua CLI
+   Các bước build:
+   - Build image với tag mới
+   - Tag format: ${DOCKER_USER}/${DOCKER_IMAGE}:${DOCKER_TAG}
+   Push image:
+   - Push lên Docker Hub
+   - Verify push thành công
+   Log thông tin:
+   - Image name và tag
+   - Kết quả push
+
+9. Trivy Image Scan (Quét bảo mật Docker image)
+   Mục đích: Kiểm tra bảo mật của container image
+   Cấu hình scan:
+   - Severity: HIGH, CRITICAL
+   - Timeout: 2700 giây (45 phút)
+   - Ignore unfixed: Bỏ qua lỗ hổng chưa có bản vá
+   Xác thực:
+   - Login vào GitHub Container Registry
+   - Sử dụng credentials 'login-ghcr'
+   Kết quả:
+   - Lưu vào file vulnerabilities.txt
+   - Hiển thị báo cáo chi tiết
+
+10. Cleanup Before Deploy (Dọn dẹp trước khi deploy)
+    Mục đích: Chuẩn bị môi trường sạch cho deployment
+    Hành động:
+    - Xóa toàn bộ workspace hiện tại
+    - Đảm bảo không có file thừa
+    Lý do:
+    - Tránh xung đột file
+    - Đảm bảo deployment sạch sẽ
+
+11. Checkout Deploy (Lấy mã nguồn deployment)
+    Mục đích: Chuẩn bị cấu hình deployment mới nhất
+    Repository:
+    - URL: DEPLOY_SCM
+    - Branch: main
+    Xác thực:
+    - Sử dụng credentials 'login-github'
+    - Đảm bảo quyền push
+    Kết quả:
+    - Có được cấu hình deployment mới nhất
+
+12. Setup Git Configuration (Cấu hình Git)
+    Mục đích: Chuẩn bị môi trường Git cho deployment
+    Kiểm tra:
+    - Xác định branch hiện tại
+    - So sánh với DEPLOY_BRANCH
+    Xử lý:
+    - Tự động chuyển về branch main nếu cần
+    - Đảm bảo đúng branch cho deployment
+
+13. Deploy to Production (Triển khai)
+    Mục đích: Cập nhật và triển khai phiên bản mới
+    Cập nhật cấu hình:
+    - Thay đổi tag trong docker-compose.yml
+    - Sử dụng sed để cập nhật version
+    Kiểm tra:
+    - Hiển thị file sau khi cập nhật
+    - Verify thay đổi
+    Git operations:
+    - Add file thay đổi
+    - Commit với message cụ thể
+    - Push lên DEPLOY_BRANCH
+    Hoàn tất:
+    - Clone lại repository chính
+    - Chuẩn bị cho lần build tiếp theo
+
+GIAI ĐOẠN KẾT THÚC (POST STAGES):
+
+1. Always (Luôn thực hiện)
+   Mục đích: Dọn dẹp và giải phóng tài nguyên
+   Đăng xuất:
+   - Docker Hub logout
+   - GitHub Container Registry logout
+   Dọn dẹp Docker:
+   - Xóa các image cũ của project
+   - Xóa các dangling images
+   - Giải phóng disk space
+   Điều kiện:
+   - Chỉ thực hiện khi có thay đổi ngoài Jenkinsfile
+   Xử lý lỗi:
+   - Log warning nếu không xóa được image
+   - Tiếp tục process ngay cả khi có lỗi
+
+2. Success (Thành công)
+   Hành động:
+   - Hiển thị thông báo thành công
+   - Log kết quả build
+   Ý nghĩa:
+   - Pipeline hoàn thành tất cả stages
+   - Không có lỗi nghiêm trọng
+
+3. Failure (Thất bại)
+   Hành động:
+   - Hiển thị thông báo thất bại
+   - Log lỗi chi tiết
+   Ý nghĩa:
+   - Có lỗi trong quá trình thực hiện
+   - Cần review logs để xác định nguyên nhân
+
+LƯU Ý QUAN TRỌNG (IMPORTANT NOTES):
+
+1. Agent Configuration
+   - Sử dụng agent với label 'local-agent'
+   - Đảm bảo agent có đủ quyền và công cụ cần thiết
+
+2. Error Handling
+   - Nhiều bước sử dụng || true
+   - Tránh pipeline fail khi có lỗi không nghiêm trọng
+   - Log đầy đủ để debug
+
+3. Security Credentials
+   - login-github: Truy cập GitHub repositories
+   - login-dockerhub: Push/pull Docker images
+   - login-ghcr: Truy cập GitHub Container Registry
+   - Đảm bảo bảo mật thông tin nhạy cảm
+
+4. Optimization
+   - Kiểm tra thay đổi để skip stages không cần thiết
+   - Sử dụng cache cho Docker builds và scans
+   - Tối ưu thời gian thực hiện
+
+5. Security Integration
+   - Trivy: Quét lỗ hổng bảo mật
+   - hadolint: Kiểm tra Dockerfile
+   - Tập trung vào các lỗ hổng nghiêm trọng
+
+6. Automated Versioning
+   - Tự động tăng version theo build number
+   - Cập nhật version trong môi trường production
+   - Tracking history qua git commits
+
+7. Pipeline Flexibility
+   - Có thể skip stages khi cần
+   - Xử lý nhiều loại thay đổi khác nhau
+   - Dễ dàng mở rộng và maintain 
+
+=== PIPELINE TRIỂN KHAI ỨNG DỤNG ALZTRACK ===
+
+1. KHỞI TẠO PIPELINE
+   - Sử dụng agent: any (có thể chạy trên bất kỳ node Jenkins nào)
+   - Thiết lập biến môi trường:
+     + DEPLOY_SCM: Repository chứa mã nguồn (https://github.com/CallMeNaul/alztrack-deployment.git)
+
+2. GIAI ĐOẠN: INFO (ℹ️)
+   - Mục đích: Hiển thị thông tin hệ thống trước khi bắt đầu
+   - Các bước thực hiện:
+     + Hiển thị user đang thực thi (whoami)
+     + Hiển thị thư mục hiện tại (pwd)
+     + Liệt kê các file trong thư mục (ls)
+
+3. GIAI ĐOẠN: CHECKOUT (📥)
+   - Mục đích: Lấy mã nguồn từ repository
+   - Các bước thực hiện:
+     + Dọn dẹp workspace cũ (cleanWs)
+     + Clone repository từ GitHub:
+       * Branch: main
+       * Sử dụng credentials: login-github
+       * URL: ${DEPLOY_SCM}
+
+4. GIAI ĐOẠN: DEPLOY APPLICATION (🚀)
+   - Mục đích: Triển khai ứng dụng sử dụng Docker Compose
+   - Các bước thực hiện:
+     + Dừng và xóa các container cũ (docker-compose down -v)
+     + Khởi động các container mới (docker-compose up -d)
+     + Các service được triển khai:
+       * PostgreSQL Database
+       * Backend Service
+       * Frontend Application
+       * Diagnosing Server
+
+5. GIAI ĐOẠN: HEALTH CHECK (🏥)
+   - Mục đích: Kiểm tra tình trạng hoạt động của các service
+   - Các bước thực hiện:
+     + Chờ 30 giây cho các service khởi động (⏳)
+     + Kiểm tra trạng thái các container (🔍):
+       * alzheimer-postgres
+       * alzheimer-backend
+       * alzheimer-app
+       * alzheimer-diagnosing-server
+     + Kiểm tra health check của diagnosing server:
+       * Gọi API: http://localhost:8000/health
+
+6. XỬ LÝ KẾT QUẢ
+   A. Thành công (✅):
+      - Hiển thị thông báo "Pipeline completed successfully!"
+      
+   B. Thất bại (❌):
+      - Rollback: Dừng và xóa tất cả các container
+      - Hiển thị thông báo "Pipeline failed!"
+
+LƯU Ý QUAN TRỌNG:
+- Pipeline sử dụng Docker Compose để quản lý các container
+- Cần thiết lập credentials 'login-github' trong Jenkins
+- Tất cả các service phải hoạt động thành công để pipeline được coi là thành công
+- Trong trường hợp lỗi, hệ thống sẽ tự động rollback để tránh trạng thái không nhất quán 

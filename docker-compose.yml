@@ -1,29 +1,43 @@
 version: '3.3'
 
 services:
-  # Cơ sở dữ liệu PostgreSQL
   postgres:
-    build:
-      context: .
-      dockerfile: Dockerfile.postgres
+    image: callmenaul/alzheimer-postgres:v1.0
     container_name: alzheimer-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: alzheimer_diagnosing
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - type: volume
+        source: postgres-data
+        target: /var/lib/postgresql/data
     networks:
       - alzheimer-network
     restart: unless-stopped
     ports:
       - "5432:5432"
 
-  # Ứng dụng
+  backend:
+    image: callmenaul/alzheimer-backend:v1.0
+    container_name: alzheimer-backend
+    environment:
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: alzheimer_diagnosing
+      PERFORM_MIGRATION: "true"
+    networks:
+      - alzheimer-network
+    depends_on:
+      - postgres
+    command: [ "node", "server.js" ]
+    restart: unless-stopped
+
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile.app
+    image: callmenaul/alzheimer-app:v1.0
     container_name: alzheimer-app
     environment:
       NODE_ENV: production
@@ -33,25 +47,27 @@ services:
       DB_PASSWORD: postgres
       DB_NAME: alzheimer_diagnosing
     depends_on:
+      - backend
       - postgres
     networks:
       - alzheimer-network
     volumes:
-      - mri-uploads:/app/uploads
+      - type: volume
+        source: mri-uploads
+        target: /app/uploads
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "80:80"
 
-  # Diagnosing Server
   diagnosing-server:
-    build:
-      context: ./diagnosing_server
-      dockerfile: Dockerfile
+    image: callmenaul/alzheimer-diagnosing-server:v8.0
     container_name: alzheimer-diagnosing-server
     environment:
       PYTHONUNBUFFERED: 1
     volumes:
-      - mri-uploads:/app/uploads
+      - type: volume
+        source: mri-uploads
+        target: /app/uploads
     networks:
       - alzheimer-network
     restart: unless-stopped
