@@ -133,149 +133,157 @@ const DoctorMriManagement = () => {
           </div>
         </div>
 
-        <Card className="border-2 border-[#02646f]/10 shadow-lg hover:shadow-xl transition-shadow duration-200">
-          <CardHeader className="pb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-[#02646f]/10">
-                <Users className="h-5 w-5 text-[#02646f]" />
-              </div>
-              <div>
-                <CardTitle className="text-2xl">Chọn Bệnh Nhân</CardTitle>
-                <CardDescription className="text-base mt-1">
-                  Chọn bệnh nhân để xem và quản lý ảnh MRI của họ
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-2 gap-8">
-              <div className="space-y-5">
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none z-10">
-                    <Search className="h-5 w-5 text-[#02646f]" />
+        <div className="grid grid-cols-12 gap-8">
+          {/* Patient Selection Card - Left Side */}
+          <div className="col-span-4">
+            <Card className="border-2 border-[#02646f]/10 shadow-lg hover:shadow-xl transition-shadow duration-200">
+              <CardHeader className="pb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-[#02646f]/10">
+                    <Users className="h-5 w-5 text-[#02646f]" />
                   </div>
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-[#02646f] to-[#05A3B5] rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-200"></div>
-                  <div className="relative">
-                    <PatientSelector
-                      doctorId={currentUser?.uid || ""}
-                      onSelectPatient={(patientId) => setSelectedPatient(patientId)}
-                      value={selectedPatient}
-                      placeholder="Tìm và chọn bệnh nhân..."
-                      className="pl-12 h-12 w-full bg-white rounded-lg border-2 border-[#02646f]/20 hover:border-[#02646f]/40 focus:border-[#02646f] focus:ring-2 focus:ring-[#02646f]/20 transition-all duration-200"
-                    />
+                  <div>
+                    <CardTitle className="text-xl">Chọn Bệnh Nhân</CardTitle>
+                    <CardDescription className="text-sm mt-1">
+                      Chọn bệnh nhân để xem và quản lý ảnh MRI
+                    </CardDescription>
                   </div>
                 </div>
-                {!selectedPatient && (
-                  <div className="text-sm flex items-center gap-3 p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200 shadow-sm">
-                    <div className="p-2 rounded-lg bg-white">
-                      <UserRound className="h-5 w-5 text-[#02646f]" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none z-10">
+                      <Search className="h-5 w-5 text-[#02646f]" />
                     </div>
-                    <span className="text-gray-600">Vui lòng chọn bệnh nhân để xem thông tin</span>
-                  </div>
-                )}
-              </div>
-              {selectedPatient && (
-                <div className="bg-gradient-to-br from-[#02646f]/5 to-[#05A3B5]/5 rounded-xl p-6 space-y-4 border border-[#02646f]/10">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-[#02646f]/10">
-                      <UserRound className="h-5 w-5 text-[#02646f]" />
-                    </div>
-                    <h3 className="font-semibold text-lg text-[#02646f]">Thông tin bệnh nhân đã chọn</h3>
-                  </div>
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="bg-white/60 p-4 rounded-lg">
-                      <span className="text-gray-500 block mb-1">Số ảnh MRI</span>
-                      <span className="text-2xl font-semibold text-[#02646f]">{scans.length}</span>
-                    </div>
-                    <div className="bg-white/60 p-4 rounded-lg">
-                      <span className="text-gray-500 block mb-1">Lần chụp gần nhất</span>
-                      <span className="text-lg font-medium text-[#02646f]">
-                        {scans[0]?.uploadDate.toLocaleDateString('vi-VN') || 'Chưa có'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {selectedPatient ? (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 p-1 bg-[#02646f]/5 rounded-xl">
-              <TabsTrigger value="view" className="flex items-center gap-2 py-3 data-[state=active]:bg-white">
-                <Database className="h-5 w-5" />
-                <span className="font-medium">Danh sách ảnh MRI</span>
-              </TabsTrigger>
-              <TabsTrigger value="upload" className="flex items-center gap-2 py-3 data-[state=active]:bg-white">
-                <Upload className="h-5 w-5" />
-                <span className="font-medium">Tải lên ảnh MRI mới</span>
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="view">
-              <Card className="shadow-lg hover:shadow-xl transition-shadow duration-200">
-                <CardHeader className="bg-gradient-to-r from-[#02646f] to-[#05A3B5] text-white rounded-t-lg p-8">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-white/10">
-                        <Database className="h-6 w-6" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-2xl">Danh Sách Ảnh MRI</CardTitle>
-                        <CardDescription className="text-white/90 mt-1">
-                          Xem các ảnh MRI và kết quả phân tích
-                        </CardDescription>
-                      </div>
-                    </div>
-                    <div className="bg-white/20 px-4 py-2 rounded-full text-base">
-                      <span className="font-semibold">{scans.length}</span>
-                      <span className="ml-1 opacity-90">ảnh</span>
-                    </div>
-                  </div>
-                </CardHeader>
-
-                <CardContent className="p-8">
-                  {loading ? (
-                    <div className="flex items-center justify-center py-16">
-                      <img src="https://i.postimg.cc/jqfHbSsP/black-on-white-removebg-preview.png"
-                        alt="Rotating Image"
-                        className="w-12 h-12 animate-spin"
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-[#02646f] to-[#05A3B5] rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-200"></div>
+                    <div className="relative">
+                      <PatientSelector
+                        doctorId={currentUser?.uid || ""}
+                        onSelectPatient={(patientId) => setSelectedPatient(patientId)}
+                        value={selectedPatient}
+                        placeholder="Tìm và chọn bệnh nhân..."
+                        className="pl-12 h-12 w-full bg-white rounded-lg border-2 border-[#02646f]/20 hover:border-[#02646f]/40 focus:border-[#02646f] focus:ring-2 focus:ring-[#02646f]/20 transition-all duration-200"
                       />
                     </div>
-                  ) : scans.length === 0 ? (
-                    <EmptyStateMessage type="no-scans" />
-                  ) : (
-                    <MriScanTable scans={scans} onViewResult={handleViewResult} />
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="upload">
-              <Card className="shadow-lg hover:shadow-xl transition-shadow duration-200">
-                <CardHeader className="bg-gradient-to-r from-[#02646f] to-[#05A3B5] text-white rounded-t-lg p-8">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-white/10">
-                      <Upload className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-2xl">Tải Lên Ảnh MRI Mới</CardTitle>
-                      <CardDescription className="text-white/90 mt-1">
-                        Tải lên ảnh MRI mới cho bệnh nhân
-                      </CardDescription>
-                    </div>
                   </div>
-                </CardHeader>
-                <CardContent className="p-8">
-                  <MriUpload onUploadComplete={handleUploadComplete} patientId={selectedPatient} />
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        ) : (
-          <EmptyStateMessage type="no-patient" />
-        )}
+                  {!selectedPatient && (
+                    <div className="text-sm flex items-center gap-3 p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200 shadow-sm">
+                      <div className="p-2 rounded-lg bg-white">
+                        <UserRound className="h-5 w-5 text-[#02646f]" />
+                      </div>
+                      <span className="text-gray-600">Vui lòng chọn bệnh nhân để xem thông tin</span>
+                    </div>
+                  )}
+                  {selectedPatient && (
+                    <div className="bg-gradient-to-br from-[#02646f]/5 to-[#05A3B5]/5 rounded-xl p-4 space-y-3 border border-[#02646f]/10">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-[#02646f]/10">
+                          <UserRound className="h-4 w-4 text-[#02646f]" />
+                        </div>
+                        <h3 className="font-medium text-[#02646f]">Thông tin bệnh nhân</h3>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="bg-white/60 p-3 rounded-lg">
+                          <span className="text-gray-500 text-sm block mb-1">Số ảnh MRI</span>
+                          <span className="text-xl font-semibold text-[#02646f]">{scans.length}</span>
+                        </div>
+                        <div className="bg-white/60 p-3 rounded-lg">
+                          <span className="text-gray-500 text-sm block mb-1">Lần chụp gần nhất</span>
+                          <span className="text-sm font-medium text-[#02646f]">
+                            {scans[0]?.uploadDate.toLocaleDateString('vi-VN') || 'Chưa có'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* MRI List and Upload - Right Side */}
+          <div className="col-span-8">
+            {selectedPatient ? (
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+                <TabsList className="grid w-full grid-cols-2 p-1 bg-[#02646f]/5 rounded-xl">
+                  <TabsTrigger value="view" className="flex items-center gap-2 py-3 data-[state=active]:bg-white">
+                    <Database className="h-5 w-5" />
+                    <span className="font-medium">Danh sách ảnh MRI</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="upload" className="flex items-center gap-2 py-3 data-[state=active]:bg-white">
+                    <Upload className="h-5 w-5" />
+                    <span className="font-medium">Tải lên ảnh MRI mới</span>
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="view">
+                  <Card className="shadow-lg hover:shadow-xl transition-shadow duration-200">
+                    <CardHeader className="bg-gradient-to-r from-[#02646f] to-[#05A3B5] text-white rounded-t-lg p-8">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-white/10">
+                            <Database className="h-6 w-6" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-2xl">Danh Sách Ảnh MRI</CardTitle>
+                            <CardDescription className="text-white/90 mt-1">
+                              Xem các ảnh MRI và kết quả phân tích
+                            </CardDescription>
+                          </div>
+                        </div>
+                        <div className="bg-white/20 px-4 py-2 rounded-full text-base">
+                          <span className="font-semibold">{scans.length}</span>
+                          <span className="ml-1 opacity-90">ảnh</span>
+                        </div>
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="p-8">
+                      {loading ? (
+                        <div className="flex items-center justify-center py-16">
+                          <img src="https://i.postimg.cc/jqfHbSsP/black-on-white-removebg-preview.png"
+                            alt="Rotating Image"
+                            className="w-12 h-12 animate-spin"
+                          />
+                        </div>
+                      ) : scans.length === 0 ? (
+                        <EmptyStateMessage type="no-scans" />
+                      ) : (
+                        <MriScanTable scans={scans} onViewResult={handleViewResult} />
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="upload">
+                  <Card className="shadow-lg hover:shadow-xl transition-shadow duration-200">
+                    <CardHeader className="bg-gradient-to-r from-[#02646f] to-[#05A3B5] text-white rounded-t-lg p-8">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-white/10">
+                          <Upload className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-2xl">Tải Lên Ảnh MRI Mới</CardTitle>
+                          <CardDescription className="text-white/90 mt-1">
+                            Tải lên ảnh MRI mới cho bệnh nhân
+                          </CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-8">
+                      <MriUpload onUploadComplete={handleUploadComplete} patientId={selectedPatient} />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+            ) : (
+              <div className="h-full flex items-center justify-center">
+                <EmptyStateMessage type="no-patient" />
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <MriScanResultSheet
