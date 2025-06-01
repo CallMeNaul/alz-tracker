@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -16,16 +15,19 @@ interface MriScan {
   cnPro: number;
   status: "pending" | "processed" | "analyzed";
   mmseScore?: number;
-  diagnosis?: "AD (Alzheimer's Disease)" | "MCI" | "CN (Normal)";
+  diagnosis?: "AD" | "MCI" | "CN";
   confidence?: number;
+  uploadedBy?: string;
+  uploadedByRole?: "doctor" | "patient";
 }
 
 interface MriScanTableProps {
   scans: MriScan[];
   onViewResult: (scan: MriScan) => void;
+  showUploader?: boolean;
 }
 
-const MriScanTable = ({ scans, onViewResult }: MriScanTableProps) => {
+const MriScanTable = ({ scans, onViewResult, showUploader = false }: MriScanTableProps) => {
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return bytes + " B";
     else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + " KB";
@@ -37,50 +39,53 @@ const MriScanTable = ({ scans, onViewResult }: MriScanTableProps) => {
     switch (status) {
       case "pending":
         return (
-          <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">
+          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
             Đang chờ
           </Badge>
         );
       case "processed":
         return (
-          <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
+          <Badge className="bg-blue-100 text-blue-800 border-blue-300">
             Đã xử lý
           </Badge>
         );
       case "analyzed":
         return (
-          <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
+          <Badge className="bg-green-100 text-green-800 border-green-300">
             Đã phân tích
           </Badge>
         );
       default:
         return (
-          <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-300">
+          <Badge className="bg-gray-100 text-gray-800 border-gray-300">
             Không xác định
           </Badge>
         );
     }
   };
 
-  const getDiagnosisLabel = (diagnosis?: "AD" | "MCI" | "CN") => {
+  const getDiagnosisBadge = (diagnosis?: "AD" | "MCI" | "CN") => {
     if (!diagnosis) return null;
-    
+
     switch (diagnosis) {
-      case "AD (Alzheimer's Disease)":
-        return {
-          label: "Alzheimer (Bệnh nặng)",
-          colorClass: "bg-red-100 text-red-800 border-red-300",
-        };
+      case "AD":
+        return (
+          <Badge className="bg-red-100 text-red-800 border-red-300">
+            Alzheimer (Bệnh nặng)
+          </Badge>
+        );
       case "MCI":
-        return {
-          label: "Suy giảm nhận thức nhẹ (Giai đoạn đầu)",
-          colorClass: "bg-yellow-100 text-yellow-800 border-yellow-300",
-        };
-      case "CN (Normal)":
-        return {
-          label: "Bình thường",
-          colorClass: "bg-green-100 text-green-800 border-green-300",
-        };
+        return (
+          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+            Suy giảm nhận thức nhẹ
+          </Badge>
+        );
+      case "CN":
+        return (
+          <Badge className="bg-green-100 text-green-800 border-green-300">
+            Bình thường
+          </Badge>
+        );
     }
   };
 
@@ -88,12 +93,13 @@ const MriScanTable = ({ scans, onViewResult }: MriScanTableProps) => {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Tên File</TableHead>
-          <TableHead>Kích Thước</TableHead>
-          <TableHead>Ngày Tải Lên</TableHead>
-          <TableHead>Trạng Thái</TableHead>
-          <TableHead>Chẩn Đoán</TableHead>
-          <TableHead className="text-right">Thao Tác</TableHead>
+          <TableHead>Tên file</TableHead>
+          <TableHead>Kích thước</TableHead>
+          <TableHead>Ngày tải lên</TableHead>
+          <TableHead>Trạng thái</TableHead>
+          <TableHead>Chẩn đoán</TableHead>
+          {showUploader && <TableHead>Người tải lên</TableHead>}
+          <TableHead className="text-right">Thao tác</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -106,37 +112,38 @@ const MriScanTable = ({ scans, onViewResult }: MriScanTableProps) => {
             </TableCell>
             <TableCell>{getStatusBadge(scan.status)}</TableCell>
             <TableCell>
-              {scan.diagnosis && (
-                <Badge
-                  variant="outline"
-                  className={getDiagnosisLabel(scan.diagnosis)?.colorClass}
-                >
-                  {getDiagnosisLabel(scan.diagnosis)?.label}
-                </Badge>
+              {scan.status === "analyzed" ? (
+                <div className="flex flex-col gap-1">
+                  {getDiagnosisBadge(scan.diagnosis)}
+                  {scan.confidence && (
+                    <span className="text-xs text-gray-500">
+                      {Math.round(scan.confidence * 100)}% độ tin cậy
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <span className="text-gray-500 text-sm">-</span>
               )}
             </TableCell>
+            {showUploader && (
+              <TableCell>
+                <Badge className={scan.uploadedByRole === "doctor" ?
+                  "bg-blue-100 text-blue-800 border-blue-300" :
+                  "bg-purple-100 text-purple-800 border-purple-300"
+                }>
+                  {scan.uploadedByRole === "doctor" ? "Bác sĩ" : "Bệnh nhân"}
+                </Badge>
+              </TableCell>
+            )}
             <TableCell className="text-right">
-              <div className="flex justify-end space-x-2">
-{/*                 <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-[#02646f] text-[#02646f] hover:bg-[#02646f] hover:text-white"
-                >
-                  <Eye className="h-4 w-4 mr-1" />
-                  Xem
-                </Button> */}
-                {scan.status === "analyzed" && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-green-500 text-green-500 hover:bg-green-500 hover:text-white"
-                    onClick={() => onViewResult(scan)}
-                  >
-                    <FileBarChart2 className="h-4 w-4 mr-1" />
-                    Kết quả
-                  </Button>
-                )}
-              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onViewResult(scan)}
+                className="hover:bg-[#02646f]/10 hover:text-[#02646f]"
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
             </TableCell>
           </TableRow>
         ))}

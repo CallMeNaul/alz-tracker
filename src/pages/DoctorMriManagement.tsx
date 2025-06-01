@@ -6,10 +6,13 @@ import PatientSelector from "../components/PatientSelector";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
-import { Brain, Database } from "lucide-react";
+import { Brain, Database, Upload } from "lucide-react";
 import MriScanTable from "@/components/mri/MriScanTable";
 import MriScanResultSheet from "@/components/mri/MriScanResultSheet";
 import EmptyStateMessage from "@/components/mri/EmptyStateMessage";
+import MriUpload from "@/components/MriUpload";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface MriScan {
   id: string;
@@ -32,13 +35,14 @@ const DoctorMriManagement = () => {
   const [selectedScan, setSelectedScan] = useState<MriScan | null>(null);
   const [isResultSheetOpen, setIsResultSheetOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<string>("");
+  const [activeTab, setActiveTab] = useState("view");
 
   useEffect(() => {
     if (!currentUser) {
       navigate("/login");
       return;
     }
-    
+
     if (userData?.role !== "doctor") {
       navigate("/dashboard");
     }
@@ -52,7 +56,7 @@ const DoctorMriManagement = () => {
 
   const fetchPatientMriScans = async (patientId: string) => {
     if (!currentUser) return;
-    
+
     try {
       setLoading(true);
       const mriRef = collection(db, "mriScans");
@@ -61,10 +65,10 @@ const DoctorMriManagement = () => {
         where("userId", "==", patientId),
         orderBy("uploadDate", "desc")
       );
-      
+
       const querySnapshot = await getDocs(q);
       const scansData: MriScan[] = [];
-      
+
       querySnapshot.forEach((doc) => {
         const data = doc.data();
         scansData.push({
@@ -80,7 +84,7 @@ const DoctorMriManagement = () => {
           confidence: data.confidence,
         });
       });
-      
+
       setScans(scansData);
     } catch (error) {
       console.error("Error fetching patient MRI scans:", error);
@@ -97,6 +101,17 @@ const DoctorMriManagement = () => {
   const handleViewResult = (scan: MriScan) => {
     setSelectedScan(scan);
     setIsResultSheetOpen(true);
+  };
+
+  const handleUploadComplete = () => {
+    if (selectedPatient) {
+      fetchPatientMriScans(selectedPatient);
+      setActiveTab("view");
+      toast({
+        title: "Thành công",
+        description: "Tải lên ảnh MRI thành công",
+      });
+    }
   };
 
   return (
@@ -126,40 +141,74 @@ const DoctorMriManagement = () => {
           </div>
         </div>
 
-        <Card className="shadow-lg border border-gray-200">
-          <CardHeader className="bg-gradient-to-r from-[#02646f] to-[#05A3B5] text-white">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Database className="h-5 w-5" />
-                <CardTitle>Danh Sách Ảnh MRI</CardTitle>
-              </div>
-              <div className="bg-white/20 px-3 py-1 rounded-full text-sm">
-                <span className="font-medium">{scans.length}</span>
-                <span className="ml-1">ảnh</span>
-              </div>
-            </div>
-            <CardDescription className="text-white/80">
-              Xem các ảnh MRI và kết quả phân tích
-            </CardDescription>
-          </CardHeader>
-          
-          <CardContent className="p-6">
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <img src="https://i.postimg.cc/jqfHbSsP/black-on-white-removebg-preview.png" 
-                     alt="Rotating Image" 
-                     className="w-10 h-10 animate-spin"
-                />
-              </div>
-            ) : !selectedPatient ? (
-              <EmptyStateMessage type="no-patient" />
-            ) : scans.length === 0 ? (
-              <EmptyStateMessage type="no-scans" />
-            ) : (
-              <MriScanTable scans={scans} onViewResult={handleViewResult} />
-            )}
-          </CardContent>
-        </Card>
+        {selectedPatient ? (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="view" className="flex items-center gap-2">
+                <Database className="h-4 w-4" />
+                Danh sách ảnh MRI
+              </TabsTrigger>
+              <TabsTrigger value="upload" className="flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                Tải lên ảnh MRI mới
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="view">
+              <Card>
+                <CardHeader className="bg-gradient-to-r from-[#02646f] to-[#05A3B5] text-white">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Database className="h-5 w-5" />
+                      <CardTitle>Danh Sách Ảnh MRI</CardTitle>
+                    </div>
+                    <div className="bg-white/20 px-3 py-1 rounded-full text-sm">
+                      <span className="font-medium">{scans.length}</span>
+                      <span className="ml-1">ảnh</span>
+                    </div>
+                  </div>
+                  <CardDescription className="text-white/80">
+                    Xem các ảnh MRI và kết quả phân tích
+                  </CardDescription>
+                </CardHeader>
+
+                <CardContent className="p-6">
+                  {loading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <img src="https://i.postimg.cc/jqfHbSsP/black-on-white-removebg-preview.png"
+                        alt="Rotating Image"
+                        className="w-10 h-10 animate-spin"
+                      />
+                    </div>
+                  ) : scans.length === 0 ? (
+                    <EmptyStateMessage type="no-scans" />
+                  ) : (
+                    <MriScanTable scans={scans} onViewResult={handleViewResult} />
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="upload">
+              <Card>
+                <CardHeader className="bg-gradient-to-r from-[#02646f] to-[#05A3B5] text-white">
+                  <div className="flex items-center gap-2">
+                    <Upload className="h-5 w-5" />
+                    <CardTitle>Tải Lên Ảnh MRI Mới</CardTitle>
+                  </div>
+                  <CardDescription className="text-white/80">
+                    Tải lên ảnh MRI mới cho bệnh nhân
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <MriUpload onUploadComplete={handleUploadComplete} patientId={selectedPatient} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <EmptyStateMessage type="no-patient" />
+        )}
       </div>
 
       <MriScanResultSheet

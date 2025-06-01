@@ -12,17 +12,18 @@ import { Badge } from "@/components/ui/badge";
 
 interface UserProfile {
   age: number;
-  gender: string;
+  gender: "male" | "female";
   // ... other user profile fields
 }
 
 interface MriUploadProps {
   onUploadComplete?: () => void;
+  patientId?: string; // Optional patientId for doctor uploads
 }
 
 const API_URL = process.env.NEXT_PUBLIC_DIAGNOSING_API_URL || "http://localhost:8000/predict/";
 
-const MriUpload = ({ onUploadComplete }: MriUploadProps) => {
+const MriUpload = ({ onUploadComplete, patientId }: MriUploadProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -47,7 +48,9 @@ const MriUpload = ({ onUploadComplete }: MriUploadProps) => {
       }
 
       try {
-        const userDocRef = doc(db, "users", currentUser.uid);
+        // If patientId is provided (doctor upload), use that instead of currentUser.uid
+        const targetUserId = patientId || currentUser.uid;
+        const userDocRef = doc(db, "users", targetUserId);
         const userDoc = await getDoc(userDocRef);
 
         if (userDoc.exists()) {
@@ -72,7 +75,7 @@ const MriUpload = ({ onUploadComplete }: MriUploadProps) => {
     };
 
     fetchUserProfile();
-  }, [currentUser]);
+  }, [currentUser, patientId]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -97,21 +100,21 @@ const MriUpload = ({ onUploadComplete }: MriUploadProps) => {
     return Math.floor(Math.random() * 9) + 21;
   };
 
-  const getDiagnosisFromMmse = (score: number): "AD (Alzheimer's Disease)" | "MCI" | "CN" => {
+  const getDiagnosisFromMmse = (score: number): "AD" | "MCI" | "CN" => {
     if (score >= 21 && score <= 23) {
-      return "AD (Alzheimer's Disease)"; // Alzheimer's Disease
+      return "AD"; // Alzheimer's Disease
     } else if (score >= 24 && score <= 26) {
       return "MCI"; // Mild Cognitive Impairment
     } else {
-      return "CN (Normal)"; // Cognitively Normal
+      return "CN"; // Cognitively Normal
     }
   };
 
-  const getStatusFromDiagnosis = (diagnosis: "AD (Alzheimer's Disease)" | "MCI" | "CN (Normal)"): "error" | "warning" | "success" => {
+  const getStatusFromDiagnosis = (diagnosis: "AD" | "MCI" | "CN"): "error" | "warning" | "success" => {
     switch (diagnosis) {
-      case "AD (Alzheimer's Disease)": return "error";
+      case "AD": return "error";
       case "MCI": return "warning";
-      case "CN (Normal)": return "success";
+      case "CN": return "success";
     }
   };
 
@@ -143,9 +146,7 @@ const MriUpload = ({ onUploadComplete }: MriUploadProps) => {
     if (!file || !currentUser || !userProfile) {
       toast({
         title: "Thiếu thông tin",
-        description: !userProfile
-          ? "Vui lòng cập nhật thông tin cá nhân trong hồ sơ của bạn trước khi tải lên ảnh MRI"
-          : "Vui lòng chọn file ảnh MRI",
+        description: "Vui lòng chọn file và cập nhật thông tin cá nhân",
         variant: "destructive",
       });
       return;
@@ -177,8 +178,11 @@ const MriUpload = ({ onUploadComplete }: MriUploadProps) => {
         adProbability: predictionResult.ad_probability
       });
 
-      await setDoc(doc(db, "mriScans", `${currentUser.uid}_${Date.now()}`), {
-        userId: currentUser.uid,
+      // Use patientId if provided (doctor upload), otherwise use currentUser.uid
+      const targetUserId = patientId || currentUser.uid;
+
+      await setDoc(doc(db, "mriScans", `${targetUserId}_${Date.now()}`), {
+        userId: targetUserId,
         fileName: file.name,
         fileSize: file.size,
         uploadDate: serverTimestamp(),
@@ -189,13 +193,19 @@ const MriUpload = ({ onUploadComplete }: MriUploadProps) => {
         age: userProfile.age,
         gender: userProfile.gender,
         cnProbability: predictionResult.cn_probability,
-        adProbability: predictionResult.ad_probability
+        adProbability: predictionResult.ad_probability,
+        uploadedBy: currentUser.uid, // Track who uploaded the scan
+        uploadedByRole: "doctor" // Track the role of the uploader
       });
 
       toast({
         title: "Phân tích thành công",
-        description: "Thông tin chẩn đoán của bạn đã được lưu thành công",
+        description: "Thông tin chẩn đoán đã được lưu thành công",
       });
+
+      if (onUploadComplete) {
+        onUploadComplete();
+      }
 
       setUploading(false);
       setProgress(0);
@@ -211,24 +221,24 @@ const MriUpload = ({ onUploadComplete }: MriUploadProps) => {
     }
   };
 
-  const getDiagnosisLabel = (diagnosis: "AD (Alzheimer's Disease)" | "MCI" | "CN (Normal)") => {
+  const getDiagnosisLabel = (diagnosis: "AD" | "MCI" | "CN") => {
     switch (diagnosis) {
-      case "AD (Alzheimer's Disease)":
+      case "AD":
         return "Alzheimer (Bệnh nặng)";
       case "MCI":
         return "Suy giảm nhận thức nhẹ (Giai đoạn đầu)";
-      case "CN (Normal)":
+      case "CN":
         return "Bình thường";
     }
   };
 
-  const getDiagnosisDescription = (diagnosis: "AD (Alzheimer's Disease)" | "MCI" | "CN (Normal)") => {
+  const getDiagnosisDescription = (diagnosis: "AD" | "MCI" | "CN") => {
     switch (diagnosis) {
-      case "AD (Alzheimer's Disease)":
+      case "AD":
         return "Kết quả cho thấy các dấu hiệu của bệnh Alzheimer ở mức độ nặng. Cần tham khảo ý kiến bác sĩ ngay lập tức để được điều trị.";
       case "MCI":
         return "Phát hiện dấu hiệu suy giảm nhận thức nhẹ ở giai đoạn đầu. Cần theo dõi và kiểm tra định kỳ với bác sĩ.";
-      case "CN (Normal)":
+      case "CN":
         return "Không phát hiện dấu hiệu bất thường. Tiếp tục duy trì lối sống lành mạnh và kiểm tra định kỳ.";
     }
   };
@@ -275,7 +285,7 @@ const MriUpload = ({ onUploadComplete }: MriUploadProps) => {
               >
                 <FileUp className="h-12 w-12 text-gray-400 mb-2" />
                 <span className="text-sm text-gray-500 mb-1">Kéo thả file hoặc nhấp để tải lên</span>
-                <span className="text-xs text-gray-400">Hỗ trợ các định dạng ảnh phổ biến</span>
+                <span className="text-xs text-gray-400">Hỗ trợ các định dạng .nii và .nii.gz</span>
               </label>
             </div>
 
