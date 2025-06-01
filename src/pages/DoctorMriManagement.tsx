@@ -150,21 +150,27 @@ const DoctorMriManagement = () => {
           <CardContent>
             <div className="grid md:grid-cols-2 gap-8">
               <div className="space-y-5">
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                    <Search className="h-5 w-5 text-gray-400" />
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none z-10">
+                    <Search className="h-5 w-5 text-[#02646f]" />
                   </div>
-                  <PatientSelector
-                    doctorId={currentUser?.uid || ""}
-                    onSelectPatient={(patientId) => setSelectedPatient(patientId)}
-                    value={selectedPatient}
-                    placeholder="Tìm và chọn bệnh nhân..."
-                  />
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-[#02646f] to-[#05A3B5] rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-200"></div>
+                  <div className="relative">
+                    <PatientSelector
+                      doctorId={currentUser?.uid || ""}
+                      onSelectPatient={(patientId) => setSelectedPatient(patientId)}
+                      value={selectedPatient}
+                      placeholder="Tìm và chọn bệnh nhân..."
+                      className="pl-12 h-12 w-full bg-white rounded-lg border-2 border-[#02646f]/20 hover:border-[#02646f]/40 focus:border-[#02646f] focus:ring-2 focus:ring-[#02646f]/20 transition-all duration-200"
+                    />
+                  </div>
                 </div>
                 {!selectedPatient && (
-                  <div className="text-sm text-gray-500 flex items-center gap-2 p-4 bg-gray-50 rounded-lg border border-gray-100">
-                    <UserRound className="h-5 w-5" />
-                    <span>Vui lòng chọn bệnh nhân để xem thông tin</span>
+                  <div className="text-sm flex items-center gap-3 p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200 shadow-sm">
+                    <div className="p-2 rounded-lg bg-white">
+                      <UserRound className="h-5 w-5 text-[#02646f]" />
+                    </div>
+                    <span className="text-gray-600">Vui lòng chọn bệnh nhân để xem thông tin</span>
                   </div>
                 )}
               </div>
