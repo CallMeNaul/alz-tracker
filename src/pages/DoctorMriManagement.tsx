@@ -115,18 +115,18 @@ const DoctorMriManagement = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-50 to-gray-100/50 p-6 pt-24">
-      <div className="max-w-7xl mx-auto space-y-8">
-        <div className="flex items-center justify-between mb-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-50 to-gray-100/50 p-6 pt-20">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="bg-gradient-to-br from-[#02646f] to-[#05A3B5] p-4 rounded-2xl text-white shadow-lg transform hover:scale-105 transition-transform duration-200">
-              <Brain className="h-7 w-7" />
+            <div className="bg-gradient-to-br from-[#02646f] to-[#05A3B5] p-3.5 rounded-2xl text-white shadow-lg transform hover:scale-105 transition-transform duration-200">
+              <Brain className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#02646f] to-[#05A3B5] text-focus-in tracking-tight">
+              <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#02646f] to-[#05A3B5] text-focus-in tracking-tight">
                 Quản Lý Ảnh MRI Bệnh Nhân
               </h1>
-              <p className="text-gray-500 mt-1 text-lg">
+              <p className="text-gray-500 mt-0.5 text-base">
                 Xem và quản lý kết quả ảnh MRI của bệnh nhân
               </p>
             </div>
