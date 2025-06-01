@@ -206,13 +206,23 @@ const DoctorMriManagement = () => {
           <div className="col-span-8">
             {selectedPatient ? (
               <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="grid w-full grid-cols-2 p-1 bg-[#02646f]/5 rounded-xl">
-                  <TabsTrigger value="view" className="flex items-center gap-2 py-3 data-[state=active]:bg-white">
-                    <Database className="h-5 w-5" />
+                <TabsList className="grid w-full grid-cols-2 p-1.5 bg-[#02646f]/5 rounded-xl">
+                  <TabsTrigger
+                    value="view"
+                    className="flex items-center gap-2.5 py-3.5 data-[state=active]:bg-white data-[state=active]:text-[#02646f] data-[state=active]:shadow-md data-[state=active]:scale-[1.02] transition-all duration-200 rounded-lg"
+                  >
+                    <div className="p-1.5 rounded-lg bg-[#02646f]/10 data-[state=active]:bg-[#02646f]/20">
+                      <Database className="h-5 w-5" />
+                    </div>
                     <span className="font-medium">Danh sách ảnh MRI</span>
                   </TabsTrigger>
-                  <TabsTrigger value="upload" className="flex items-center gap-2 py-3 data-[state=active]:bg-white">
-                    <Upload className="h-5 w-5" />
+                  <TabsTrigger
+                    value="upload"
+                    className="flex items-center gap-2.5 py-3.5 data-[state=active]:bg-white data-[state=active]:text-[#02646f] data-[state=active]:shadow-md data-[state=active]:scale-[1.02] transition-all duration-200 rounded-lg"
+                  >
+                    <div className="p-1.5 rounded-lg bg-[#02646f]/10 data-[state=active]:bg-[#02646f]/20">
+                      <Upload className="h-5 w-5" />
+                    </div>
                     <span className="font-medium">Tải lên ảnh MRI mới</span>
                   </TabsTrigger>
                 </TabsList>
