@@ -232,13 +232,13 @@ const DoctorMriManagement = () => {
           {/* MRI List and Upload - Right Side */}
           <div className="col-span-9">
             {selectedPatient ? (
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
                 <TabsContent
                   value="view"
                   className="data-[state=inactive]:animate-slideOutLeft data-[state=active]:animate-slideInLeft"
                 >
                   <Card className="shadow-lg hover:shadow-xl transition-shadow duration-200">
-                    <CardHeader className="bg-gradient-to-r from-[#02646f] to-[#05A3B5] text-white rounded-t-lg p-8">
+                    <CardHeader className="bg-gradient-to-r from-[#02646f] to-[#05A3B5] text-white rounded-t-lg p-6">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="p-2 rounded-lg bg-white/10">
@@ -258,7 +258,7 @@ const DoctorMriManagement = () => {
                       </div>
                     </CardHeader>
 
-                    <CardContent className="p-8">
+                    <CardContent className="p-6">
                       {loading ? (
                         <div className="flex items-center justify-center py-16">
                           <img src="https://i.postimg.cc/jqfHbSsP/black-on-white-removebg-preview.png"
