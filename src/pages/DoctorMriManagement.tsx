@@ -36,6 +36,8 @@ const DoctorMriManagement = () => {
   const [isResultSheetOpen, setIsResultSheetOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<string>("");
   const [activeTab, setActiveTab] = useState("view");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   useEffect(() => {
     if (!currentUser) {
@@ -114,6 +116,11 @@ const DoctorMriManagement = () => {
     }
   };
 
+  const paginatedScans = scans.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-50 to-gray-100/50 p-6 pt-20">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -131,23 +138,43 @@ const DoctorMriManagement = () => {
               </p>
             </div>
           </div>
+
+          {selectedPatient && (
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="grid w-[400px] grid-cols-2 p-1.5 bg-[#02646f]/5 rounded-xl">
+                <TabsTrigger
+                  value="view"
+                  className="flex items-center justify-center gap-2.5 py-2.5 data-[state=active]:bg-white data-[state=active]:text-[#02646f] data-[state=active]:shadow-md transition-all duration-200 rounded-lg hover:bg-white/50"
+                >
+                  <div className="p-1.5 rounded-lg bg-[#02646f]/10">
+                    <Database className="h-5 w-5" />
+                  </div>
+                  <span className="font-medium">Danh sách ảnh MRI</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="upload"
+                  className="flex items-center justify-center gap-2.5 py-2.5 data-[state=active]:bg-white data-[state=active]:text-[#02646f] data-[state=active]:shadow-md transition-all duration-200 rounded-lg hover:bg-white/50"
+                >
+                  <div className="p-1.5 rounded-lg bg-[#02646f]/10">
+                    <Upload className="h-5 w-5" />
+                  </div>
+                  <span className="font-medium">Tải lên ảnh MRI mới</span>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
         </div>
 
         <div className="grid grid-cols-12 gap-8">
           {/* Patient Selection Card - Left Side */}
-          <div className="col-span-4">
+          <div className="col-span-3">
             <Card className="border-2 border-[#02646f]/10 shadow-lg hover:shadow-xl transition-shadow duration-200">
-              <CardHeader className="pb-6">
+              <CardHeader className="pb-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-[#02646f]/10">
                     <Users className="h-5 w-5 text-[#02646f]" />
                   </div>
-                  <div>
-                    <CardTitle className="text-xl">Chọn Bệnh Nhân</CardTitle>
-                    {/* <CardDescription className="text-sm mt-1">
-                      Chọn bệnh nhân để xem và quản lý ảnh MRI
-                    </CardDescription> */}
-                  </div>
+                  <CardTitle className="text-xl">Chọn Bệnh Nhân</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
@@ -203,30 +230,9 @@ const DoctorMriManagement = () => {
           </div>
 
           {/* MRI List and Upload - Right Side */}
-          <div className="col-span-8">
+          <div className="col-span-9">
             {selectedPatient ? (
               <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="grid w-full grid-cols-2 p-1.5 rounded-xl"> {/* bg-[#02646f]/5 */}
-                  <TabsTrigger
-                    value="view"
-                    className="flex items-center justify-center gap-2.5 py-3.5 data-[state=active]:bg-white data-[state=active]:text-[#02646f] data-[state=active]:shadow-md transition-all duration-200 rounded-lg hover:bg-white/50"
-                  >
-                    <div className="p-1.5 rounded-lg bg-[#02646f]/10">
-                      <Database className="h-5 w-5" />
-                    </div>
-                    <span className="font-medium">Danh sách ảnh MRI</span>
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="upload"
-                    className="flex items-center justify-center gap-2.5 py-3.5 data-[state=active]:bg-white data-[state=active]:text-[#02646f] data-[state=active]:shadow-md transition-all duration-200 rounded-lg hover:bg-white/50"
-                  >
-                    <div className="p-1.5 rounded-lg bg-[#02646f]/10">
-                      <Upload className="h-5 w-5" />
-                    </div>
-                    <span className="font-medium">Tải lên ảnh MRI mới</span>
-                  </TabsTrigger>
-                </TabsList>
-
                 <TabsContent
                   value="view"
                   className="data-[state=inactive]:animate-slideOutLeft data-[state=active]:animate-slideInLeft"
@@ -263,7 +269,32 @@ const DoctorMriManagement = () => {
                       ) : scans.length === 0 ? (
                         <EmptyStateMessage type="no-scans" />
                       ) : (
-                        <MriScanTable scans={scans} onViewResult={handleViewResult} />
+                        <>
+                          <MriScanTable scans={paginatedScans} onViewResult={handleViewResult} />
+                          {scans.length > itemsPerPage && (
+                            <div className="mt-6 flex items-center justify-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                              >
+                                Trước
+                              </Button>
+                              <span className="text-sm text-gray-500">
+                                Trang {currentPage} / {Math.ceil(scans.length / itemsPerPage)}
+                              </span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(prev => Math.min(Math.ceil(scans.length / itemsPerPage), prev + 1))}
+                                disabled={currentPage === Math.ceil(scans.length / itemsPerPage)}
+                              >
+                                Sau
+                              </Button>
+                            </div>
+                          )}
+                        </>
                       )}
                     </CardContent>
                   </Card>
