@@ -184,11 +184,11 @@ const DoctorMriManagement = () => {
                         <h3 className="font-medium text-[#02646f]">Thông tin bệnh nhân</h3>
                       </div>
                       <div className="space-y-2">
-                        <div className="bg-white/60 p-3 rounded-lg">
+                        <div className="bg-white/60 p-3 rounded-lg text-center">
                           <span className="text-gray-500 text-sm block mb-1">Số ảnh MRI</span>
                           <span className="text-xl font-semibold text-[#02646f]">{scans.length}</span>
                         </div>
-                        <div className="bg-white/60 p-3 rounded-lg">
+                        <div className="bg-white/60 p-3 rounded-lg text-center">
                           <span className="text-gray-500 text-sm block mb-1">Lần chụp gần nhất</span>
                           <span className="text-sm font-medium text-[#02646f]">
                             {scans[0]?.uploadDate.toLocaleDateString('vi-VN') || 'Chưa có'}
