@@ -232,7 +232,7 @@ const DoctorMriManagement = () => {
           {/* MRI List and Upload - Right Side */}
           <div className="col-span-9">
             {selectedPatient ? (
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-2">
                 <TabsContent
                   value="view"
                   className="data-[state=inactive]:animate-slideOutLeft data-[state=active]:animate-slideInLeft"
