@@ -227,7 +227,10 @@ const DoctorMriManagement = () => {
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="view">
+                <TabsContent
+                  value="view"
+                  className="data-[state=inactive]:animate-slideOutLeft data-[state=active]:animate-slideInLeft"
+                >
                   <Card className="shadow-lg hover:shadow-xl transition-shadow duration-200">
                     <CardHeader className="bg-gradient-to-r from-[#02646f] to-[#05A3B5] text-white rounded-t-lg p-8">
                       <div className="flex items-center justify-between">
@@ -266,7 +269,10 @@ const DoctorMriManagement = () => {
                   </Card>
                 </TabsContent>
 
-                <TabsContent value="upload">
+                <TabsContent
+                  value="upload"
+                  className="data-[state=inactive]:animate-slideOutRight data-[state=active]:animate-slideInRight"
+                >
                   <Card className="shadow-lg hover:shadow-xl transition-shadow duration-200">
                     <CardHeader className="bg-gradient-to-r from-[#02646f] to-[#05A3B5] text-white rounded-t-lg p-8">
                       <div className="flex items-center gap-3">
