@@ -183,13 +183,13 @@ const MriScanResultSheet = ({ scan, isOpen, onOpenChange }: MriScanResultSheetPr
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-sm text-gray-500">Xác suất Alzheimer:</span>
                         <Badge className="bg-red-100 text-red-800 border-red-300">
-                          {Math.round(scan.adPro * 100)}%
+                          {(scan.adPro / 100 * 100).toFixed(1)}%
                         </Badge>
                       </div>
                       <div className="h-2 bg-gray-200 rounded-full">
                         <div
                           className="h-2 bg-red-500 rounded-full"
-                          style={{ width: `${scan.adPro * 100}%` }}
+                          style={{ width: `${scan.adPro}%` }}
                         />
                       </div>
                     </div>
@@ -198,13 +198,13 @@ const MriScanResultSheet = ({ scan, isOpen, onOpenChange }: MriScanResultSheetPr
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-sm text-gray-500">Xác suất bình thường:</span>
                         <Badge className="bg-green-100 text-green-800 border-green-300">
-                          {Math.round(scan.cnPro * 100)}%
+                          {(scan.cnPro / 100 * 100).toFixed(1)}%
                         </Badge>
                       </div>
                       <div className="h-2 bg-gray-200 rounded-full">
                         <div
                           className="h-2 bg-green-500 rounded-full"
-                          style={{ width: `${scan.cnPro * 100}%` }}
+                          style={{ width: `${scan.cnPro}%` }}
                         />
                       </div>
                     </div>
