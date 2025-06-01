@@ -6,7 +6,7 @@ import PatientSelector from "../components/PatientSelector";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
-import { Brain, Database, Upload } from "lucide-react";
+import { Brain, Database, Upload, Users, UserRound, Search } from "lucide-react";
 import MriScanTable from "@/components/mri/MriScanTable";
 import MriScanResultSheet from "@/components/mri/MriScanResultSheet";
 import EmptyStateMessage from "@/components/mri/EmptyStateMessage";
@@ -23,7 +23,7 @@ interface MriScan {
   cnPro: number;
   status: "pending" | "processed" | "analyzed";
   mmseScore?: number;
-  diagnosis?: "AD (Alzheimer's Disease)" | "MCI" | "CN (Normal)";
+  diagnosis?: "AD" | "MCI" | "CN";
   confidence?: number;
 }
 
@@ -116,8 +116,8 @@ const DoctorMriManagement = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-6 pt-24">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-gradient-to-br from-[#02646f] to-[#05A3B5] p-3 rounded-full text-white shadow-lg">
               <Brain className="h-6 w-6" />
@@ -131,19 +131,66 @@ const DoctorMriManagement = () => {
               </p>
             </div>
           </div>
-          <div className="w-72">
-            <PatientSelector
-              doctorId={currentUser?.uid || ""}
-              onSelectPatient={(patientId) => setSelectedPatient(patientId)}
-              value={selectedPatient}
-              placeholder="Chọn bệnh nhân cần xem"
-            />
-          </div>
         </div>
+
+        <Card className="border-2 border-[#02646f]/10">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-[#02646f]" />
+              <CardTitle>Chọn Bệnh Nhân</CardTitle>
+            </div>
+            <CardDescription>
+              Chọn bệnh nhân để xem và quản lý ảnh MRI của họ
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                    <Search className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <PatientSelector
+                    doctorId={currentUser?.uid || ""}
+                    onSelectPatient={(patientId) => setSelectedPatient(patientId)}
+                    value={selectedPatient}
+                    placeholder="Tìm và chọn bệnh nhân..."
+                  />
+                </div>
+                {!selectedPatient && (
+                  <div className="text-sm text-gray-500 flex items-center gap-2">
+                    <UserRound className="h-4 w-4" />
+                    Vui lòng chọn bệnh nhân để xem thông tin
+                  </div>
+                )}
+              </div>
+              {selectedPatient && (
+                <div className="bg-[#02646f]/5 rounded-lg p-4 space-y-2">
+                  <div className="flex items-center gap-2 text-[#02646f]">
+                    <UserRound className="h-5 w-5" />
+                    <h3 className="font-medium">Thông tin bệnh nhân đã chọn</h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-500">Số ảnh MRI:</span>
+                      <span className="ml-2 font-medium">{scans.length}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Lần chụp gần nhất:</span>
+                      <span className="ml-2 font-medium">
+                        {scans[0]?.uploadDate.toLocaleDateString('vi-VN') || 'Chưa có'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {selectedPatient ? (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList>
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="view" className="flex items-center gap-2">
                 <Database className="h-4 w-4" />
                 Danh sách ảnh MRI
