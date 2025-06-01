@@ -144,9 +144,9 @@ const DoctorMriManagement = () => {
                   </div>
                   <div>
                     <CardTitle className="text-xl">Chọn Bệnh Nhân</CardTitle>
-                    <CardDescription className="text-sm mt-1">
+                    {/* <CardDescription className="text-sm mt-1">
                       Chọn bệnh nhân để xem và quản lý ảnh MRI
-                    </CardDescription>
+                    </CardDescription> */}
                   </div>
                 </div>
               </CardHeader>
@@ -206,7 +206,7 @@ const DoctorMriManagement = () => {
           <div className="col-span-8">
             {selectedPatient ? (
               <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="grid w-full grid-cols-2 p-1.5 bg-[#02646f]/5 rounded-xl">
+                <TabsList className="grid w-full grid-cols-2 p-1.5 rounded-xl"> {/* bg-[#02646f]/5 */}
                   <TabsTrigger
                     value="view"
                     className="flex items-center justify-center gap-2.5 py-3.5 data-[state=active]:bg-white data-[state=active]:text-[#02646f] data-[state=active]:shadow-md transition-all duration-200 rounded-lg hover:bg-white/50"
