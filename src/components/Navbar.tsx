@@ -14,7 +14,7 @@ import {
 import {
   Menu, FileText, Clipboard, Book, FileBarChart2, MessageSquare,
   Bell, Image, User, LogOut, UserPlus, Home, Info, ListChecks,
-  FlaskConical, Contact, Zap, Settings
+  FlaskConical, Contact, Zap, Settings, Key
 } from "lucide-react";
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger, navigationMenuTriggerStyle } from "@/components/ui/navigation-menu";
 
@@ -434,6 +434,13 @@ const Navbar = () => {
                       >
                         <User className="inline-block mr-2 h-4 w-4" />
                         Hồ Sơ
+                      </button>
+                      <button
+                        onClick={() => navigateWithEffect("/change-password")}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[#02646f] hover:text-white transition-colors duration-200"
+                      >
+                        <Key className="inline-block mr-2 h-4 w-4" />
+                        Đổi Mật Khẩu
                       </button>
                       {isAdmin && (
                         <button
