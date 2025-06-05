@@ -1,4 +1,3 @@
-
 // Database configuration for PostgreSQL
 import { Pool } from 'pg';
 
@@ -99,6 +98,18 @@ export const dbService = {
       const result = await query(
         'SELECT * FROM auth WHERE email = $1',
         [email]
+      );
+      return result.rows[0];
+    },
+
+    // Update password
+    async updatePassword(userId: string, newHashedPassword: string) {
+      const result = await query(
+        `UPDATE auth 
+         SET password = $2
+         WHERE id = $1 
+         RETURNING *`,
+        [userId, newHashedPassword]
       );
       return result.rows[0];
     }

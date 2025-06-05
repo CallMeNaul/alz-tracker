@@ -11,9 +11,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { 
-  Menu, FileText, Clipboard, Book, FileBarChart2, MessageSquare, 
-  Bell, Image, User, LogOut, UserPlus, Home, Info, ListChecks, 
+import {
+  Menu, FileText, Clipboard, Book, FileBarChart2, MessageSquare,
+  Bell, Image, User, LogOut, UserPlus, Home, Info, ListChecks,
   FlaskConical, Contact, Zap, Settings
 } from "lucide-react";
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger, navigationMenuTriggerStyle } from "@/components/ui/navigation-menu";
@@ -34,9 +34,9 @@ const Navbar = () => {
     function handleClickOutside(event: MouseEvent) {
       if (
         isDropdownOpen &&
-        avatarRef.current && 
+        avatarRef.current &&
         !avatarRef.current.contains(event.target as Node) &&
-        dropdownRef.current && 
+        dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node)
       ) {
         setIsDropdownOpen(false);
@@ -74,13 +74,13 @@ const Navbar = () => {
 
   const navigateWithEffect = (path: string) => {
     document.body.classList.add('page-exit');
-    
+
     setTimeout(() => {
       navigate(path);
       window.scrollTo(0, 0); // Ensure we're at the top
       document.body.classList.remove('page-exit');
       document.body.classList.add('page-enter');
-      
+
       setTimeout(() => {
         document.body.classList.remove('page-enter');
       }, 500);
@@ -119,9 +119,9 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center">
-              <img 
-                src="https://i.postimg.cc/jqfHbSsP/black-on-white-removebg-preview.png" 
-                alt="AlzTracker Logo" 
+              <img
+                src="https://i.postimg.cc/jqfHbSsP/black-on-white-removebg-preview.png"
+                alt="AlzTracker Logo"
                 className="h-8 w-8 mr-2"
               />
               <span className="text-xl font-bold text-white font-space-mono">AlzTracker</span>
@@ -131,32 +131,32 @@ const Navbar = () => {
           <div className="hidden md:flex items-center space-x-2">
             {isHomePage ? (
               <>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   className="text-white hover:text-white hover:bg-[#037884] transition-all duration-300"
                   onClick={() => scrollToSection('intro')}
                 >
                   <Info className="mr-2 h-4 w-4" />
                   Giới Thiệu
                 </Button>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   className="text-white hover:text-white hover:bg-[#037884] transition-all duration-300"
                   onClick={() => scrollToSection('features')}
                 >
                   <ListChecks className="mr-2 h-4 w-4" />
                   Tính Năng
                 </Button>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   className="text-white hover:text-white hover:bg-[#037884] transition-all duration-300"
                   onClick={() => scrollToSection('diagnosticParams')}
                 >
                   <FlaskConical className="mr-2 h-4 w-4" />
                   Các Thông Số Chẩn Đoán
                 </Button>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   className="text-white hover:text-white hover:bg-[#037884] transition-all duration-300"
                   onClick={() => navigateWithEffect('/contact')}
                 >
@@ -165,10 +165,10 @@ const Navbar = () => {
                 </Button>
               </>
             ) : null}
-            
+
             {isContactPage && (
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 className="text-white hover:text-white hover:bg-[#037884] transition-all duration-300"
                 onClick={navigateHome}
               >
@@ -176,11 +176,11 @@ const Navbar = () => {
                 Trang Chủ
               </Button>
             )}
-            
+
             {currentUser && !isHomePage && (
               <>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   className={`text-white hover:text-white hover:bg-[#037884] transition-all duration-300 ${location.pathname === '/dashboard' ? 'bg-[#037884] shadow-md' : ''}`}
                   onClick={() => navigateWithEffect("/dashboard")}
                 >
@@ -189,7 +189,7 @@ const Navbar = () => {
                 </Button>
 
                 {isAdmin && (
-                  <Button 
+                  <Button
                     variant="ghost"
                     className={`text-white hover:text-white hover:bg-[#037884] transition-all duration-300 ${location.pathname === '/admin/doctor-register' ? 'bg-[#037884] shadow-md' : ''}`}
                     onClick={() => navigateWithEffect("/admin/doctor-register")}
@@ -407,7 +407,7 @@ const Navbar = () => {
           <div className="flex items-center space-x-4">
             {currentUser ? (
               <>
-                <div 
+                <div
                   ref={avatarRef}
                   className="relative"
                   onMouseEnter={() => setIsDropdownOpen(true)}
@@ -415,8 +415,8 @@ const Navbar = () => {
                   <Avatar className="h-8 w-8 bg-[#ffaa67] text-white cursor-pointer hover:scale-110 transition-transform duration-200">
                     <AvatarFallback className="bg-[#ffaa67] text-white">{getInitial()}</AvatarFallback>
                   </Avatar>
-                  
-                  <div 
+
+                  <div
                     ref={dropdownRef}
                     onMouseEnter={() => setIsDropdownOpen(true)}
                     onMouseLeave={() => setIsDropdownOpen(false)}
@@ -424,8 +424,8 @@ const Navbar = () => {
                   >
                     <div className="py-1">
                       <div className="px-4 py-2 text-sm text-gray-700 border-b">
-                        {isAdmin ? 
-                          `Administrator` : 
+                        {isAdmin ?
+                          `Administrator` :
                           `${isDoctor ? "Bác Sĩ" : "Bệnh Nhân"}: ${currentUser.displayName || "Người Dùng"}`}
                       </div>
                       <button
@@ -456,8 +456,8 @@ const Navbar = () => {
                 </div>
 
                 <div className="md:hidden">
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     className="text-white"
                     onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                   >
@@ -467,16 +467,16 @@ const Navbar = () => {
               </>
             ) : (
               <>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   className="text-white hover:text-white hover:bg-[#037884] transition-all duration-300"
                   onClick={() => navigateWithEffect("/login")}
                 >
                   <User className="mr-2 h-4 w-4" />
                   Đăng Nhập
                 </Button>
-                <Button 
-                  variant="default" 
+                <Button
+                  variant="default"
                   className="bg-white text-[#02646f] hover:bg-gray-100 transition-all duration-300 hover:scale-105"
                   onClick={() => navigateWithEffect("/patient-register")}
                 >

@@ -25,70 +25,71 @@ import AdminDoctorRegister from "./pages/AdminDoctorRegister";
 import AdminDoctorAccounts from "./pages/AdminDoctorAccounts";
 import Contact from "./pages/Contact";
 import DoctorMriManagement from "./pages/DoctorMriManagement";
+import ChangePassword from "./components/ChangePassword";
 
 const queryClient = new QueryClient();
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const { currentUser, loading } = useAuth();
-  
+
   if (loading) return <div>Loading...</div>;
-  
+
   if (!currentUser) {
     return <Navigate to="/login" replace />;
   }
-  
+
   return children;
 };
 
 // Admin role protected route
 const AdminRoute = ({ children }: { children: JSX.Element }) => {
   const { currentUser, userData, loading, isAdmin } = useAuth();
-  
+
   if (loading) return <div>Loading...</div>;
-  
+
   if (!currentUser || !userData || !isAdmin()) {
     return <Navigate to="/dashboard" replace />;
   }
-  
+
   return children;
 };
 
 // Doctor role protected route - Updated to allow access to patients for their own data
 const DoctorOrPatientRoute = ({ children }: { children: JSX.Element }) => {
   const { currentUser, userData, loading } = useAuth();
-  
+
   if (loading) return <div>Loading...</div>;
-  
+
   if (!currentUser || !userData) {
     return <Navigate to="/dashboard" replace />;
   }
-  
+
   return children;
 };
 
 // Patient role protected route
 const PatientRoute = ({ children }: { children: JSX.Element }) => {
   const { currentUser, userData, loading, isPatient } = useAuth();
-  
+
   if (loading) return <div>Loading...</div>;
-  
+
   if (!currentUser || !userData || !isPatient()) {
     return <Navigate to="/dashboard" replace />;
   }
-  
+
   return children;
 };
 
 const DoctorOrPatientMriRoute = ({ children }: { children: JSX.Element }) => {
   const { currentUser, userData, loading } = useAuth();
-  
+
   if (loading) return <div>Loading...</div>;
-  
+
   if (!currentUser || !userData || (userData.role !== "doctor" && userData.role !== "patient")) {
     return <Navigate to="/dashboard" replace />;
   }
-  
+
   return children;
 };
 
@@ -106,7 +107,7 @@ const AppRoutes = () => {
       const timer = setTimeout(() => {
         setIsPageLoading(false);
       }, 1000);
-      
+
       return () => clearTimeout(timer);
     }
   }, [skipLoading]);
@@ -122,101 +123,109 @@ const AppRoutes = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/patient-register" element={<PatientRegister />} />
       <Route path="/contact" element={<Contact />} />
-      <Route 
-        path="/dashboard" 
+      <Route
+        path="/dashboard"
         element={
           <ProtectedRoute>
             <Dashboard />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/profile" 
+      <Route
+        path="/profile"
         element={
           <ProtectedRoute>
             <Profile />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/doctor-register" 
+      <Route
+        path="/admin/doctor-register"
         element={
           <AdminRoute>
             <AdminDoctorRegister />
           </AdminRoute>
-        } 
+        }
       />
-      <Route 
-        path="/progress-notes" 
+      <Route
+        path="/progress-notes"
         element={
           <DoctorOrPatientRoute>
             <ProgressNotes />
           </DoctorOrPatientRoute>
-        } 
+        }
       />
-      <Route 
-        path="/diagnosis" 
+      <Route
+        path="/diagnosis"
         element={
           <DoctorOrPatientRoute>
             <Diagnosis />
           </DoctorOrPatientRoute>
-        } 
+        }
       />
-      <Route 
-        path="/medical-history" 
+      <Route
+        path="/medical-history"
         element={
           <DoctorOrPatientRoute>
             <MedicalHistory />
           </DoctorOrPatientRoute>
-        } 
+        }
       />
-      <Route 
-        path="/reports" 
+      <Route
+        path="/reports"
         element={
           <DoctorOrPatientRoute>
             <Reports />
           </DoctorOrPatientRoute>
-        } 
+        }
       />
-      <Route 
-        path="/forum" 
+      <Route
+        path="/forum"
         element={
           <ProtectedRoute>
             <Forum />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/reminders" 
+      <Route
+        path="/reminders"
         element={
           <ProtectedRoute>
             <Reminders />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/my-mri-scans" 
+      <Route
+        path="/my-mri-scans"
         element={
           <DoctorOrPatientMriRoute>
             <MyMriScans />
           </DoctorOrPatientMriRoute>
-        } 
+        }
       />
-      <Route 
-        path="/doctor/mri-management" 
+      <Route
+        path="/doctor/mri-management"
         element={
           <ProtectedRoute>
             <DoctorMriManagement />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/doctor-accounts" 
+      <Route
+        path="/admin/doctor-accounts"
         element={
           <AdminRoute>
             <AdminDoctorAccounts />
           </AdminRoute>
-        } 
+        }
+      />
+      <Route
+        path="/change-password"
+        element={
+          <ProtectedRoute>
+            <ChangePassword />
+          </ProtectedRoute>
+        }
       />
       <Route path="*" element={<NotFound />} />
     </Routes>
