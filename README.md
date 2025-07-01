@@ -1,49 +1,33 @@
 
 # Welcome to my Graduation Thesis Project
 
-## Project info
+## What technologies are used for this project?
 
-**URL**: https://lovable.dev/projects/4989326e-e756-4986-9ac0-39248cb7137e
+This project is built with .
 
-## How can I edit this code?
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
+- Node.js and Express.js
+- PostgreSQL for database
+- bcryptjs for password hashing
 
-**Use your preferred IDE**
+## Local Deployment Guide
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+If you want to work locally using your own IDE, you can clone this repo and push changes.
 
 The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
+The database consists of the following main tables:
+
+1. **auth**: Stores user authentication information
+2. **users**: Stores user profile information
+3. **diagnostics**: Stores patient diagnostic information
+4. **mri_scans**: Stores uploaded MRI image information
+
 Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## Local Deployment Guide
 
 ### Setting up PostgreSQL Database Locally
 
@@ -90,8 +74,9 @@ npm run dev
 
 1. **Clone the repository:**
    ```sh
-   git clone <YOUR_REPOSITORY_URL>
-   cd <YOUR_PROJECT_DIRECTORY>
+   git clone https://github.com/CallMeNaul/alz-tracker.git
+   cd alz-tracker
+   cp env-example .env
    ```
 
 2. **Install dependencies:**
@@ -120,18 +105,66 @@ npm run dev
 5. **Access the application:**
    - Open your browser and navigate to: `http://localhost:8080`
 
-### Migrating from Firebase to PostgreSQL
+## Docker Deployment Guide
 
-If you have existing data in Firebase that you want to migrate to your local PostgreSQL database:
+### System Requirements
+1. Install [Docker](https://docs.docker.com/get-docker/)
+2. Install [Docker Compose](https://docs.docker.com/compose/install/)
 
-1. **Export your Firebase data:**
-   - Go to Firebase Console > Your Project > Database > Export Data
+### System Structure
 
-2. **Run the migration script:**
-   ```sh
-   # Ensure your Firebase config is properly set up in src/services/firebase.ts
-   node src/utils/migrateFirebaseToPostgres.ts
-   ```
+1. **postgres**: PostgreSQL database
+2. **app**: React frontend
+3. **diagnosing-server**: Python Server for MRI image diagnosis and demographic information
+4. **backend**: Node.js application running Express.js
+
+### 1. Clone repository
+
+```bash
+git clone <repository-url>
+cd <repository-directory>
+```
+
+### 2. Build and launch services
+
+```bash
+docker-compose up -d
+```
+
+### 3. Access the application
+
+Open your web browser and go to:
+
+```
+http://localhost:8080
+```
+
+### View logs
+
+```bash
+# View logs of all services
+docker-compose logs
+
+# Monitor logs in real time
+docker-compose logs -f
+```
+
+### Stop services
+
+```bash
+# Stop all services
+docker-compose down
+
+# Stop and remove all services (volumes)
+docker-compose down -v
+docker system prune -a
+```
+
+### Restart services
+
+```bash
+docker-compose restart
+```
 
 ### Troubleshooting
 
@@ -140,32 +173,20 @@ If you have existing data in Firebase that you want to migrate to your local Pos
   - Verify database credentials in `src/services/database.ts`
   - Ensure your firewall allows connections to PostgreSQL port (default: 5432)
 
+```bash
+# View postgres logs 
+docker-compose logs postgres
+
+# Make sure ports are not conflicting
+sudo lsof -i :5432
+
+# View front-end logs
+docker-compose logs app
+
+# Check network information
+docker network inspect alzheimer-network
+```
+
 - **Authentication problems:**
   - The local authentication system uses bcrypt for password hashing
   - Ensure the auth tables are properly initialized
-
-## What technologies are used for this project?
-
-This project is built with .
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-- PostgreSQL for database
-- bcryptjs for password hashing
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/4989326e-e756-4986-9ac0-39248cb7137e) and click on Share -> Publish.
-
-For production deployment with a PostgreSQL database:
-1. Set up a PostgreSQL database on your hosting provider
-2. Configure the database connection in `src/services/database.ts`
-3. Set the `NODE_ENV` environment variable to `production`
-4. Deploy your application
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)

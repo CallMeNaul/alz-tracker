@@ -399,44 +399,6 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// Đổi mật khẩu
-app.post('/api/auth/change-password', async (req, res) => {
-  try {
-    const { userId, currentPassword, newPassword } = req.body;
-
-    // Lấy thông tin người dùng từ bảng auth
-    const authResult = await query(
-      'SELECT * FROM auth WHERE id = $1',
-      [userId]
-    );
-
-    const authUser = authResult.rows[0];
-    if (!authUser) {
-      return res.status(404).json({ error: 'Không tìm thấy người dùng' });
-    }
-
-    // Kiểm tra mật khẩu hiện tại
-    const passwordMatch = await bcrypt.compare(currentPassword, authUser.password);
-    if (!passwordMatch) {
-      return res.status(400).json({ error: 'Mật khẩu hiện tại không đúng' });
-    }
-
-    // Mã hóa mật khẩu mới
-    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
-
-    // Cập nhật mật khẩu mới
-    await query(
-      `UPDATE auth SET password = $2 WHERE id = $1`,
-      [userId, hashedNewPassword]
-    );
-
-    res.status(200).json({ message: 'Đổi mật khẩu thành công' });
-  } catch (error) {
-    console.error('Change password error:', error);
-    res.status(500).json({ error: 'Lỗi máy chủ' });
-  }
-});
-
 // API DIAGNOSTICS
 // Tạo chẩn đoán
 app.post('/api/diagnostics', async (req, res) => {

@@ -1,28 +1,26 @@
-import os
-import shutil
-import tempfile
-from typing import Optional
-
-import nibabel as nib
-import numpy as np
-import pytorch_lightning as pl
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import Optional
+import shutil
+import os
+import tempfile
+import torch
+import nibabel as nib
+import torch.nn.functional as F
 from scipy.ndimage import gaussian_filter
-from torchmetrics import Accuracy, MeanAbsoluteError
-from torchmetrics.classification import (BinaryRecall, BinarySpecificity,
-                                         MulticlassRecall,
-                                         MulticlassSpecificity)
-from torchvision.models.video import R3D_18_Weights, r3d_18
 
 # ==================================================================================================
 
+import torch.nn as nn
+import pytorch_lightning as pl
+from torchmetrics import Accuracy, MeanAbsoluteError
+from torchvision.models.video import r3d_18, R3D_18_Weights
 
 
+import numpy as np
+from torchmetrics.classification import BinarySpecificity, BinaryRecall
+from torchmetrics.classification import MulticlassSpecificity, MulticlassRecall
 
 
 def rmse_tt(predictions, targets):
@@ -709,7 +707,7 @@ class MultiTaskAlzheimerModel(pl.LightningModule):
         }
 
 
-# =========================================================================================================
+# =================================================================================================
 app = FastAPI(title="Alzheimer's Disease Prediction API")
 
 app.add_middleware(
@@ -801,11 +799,7 @@ async def startup_event():
         print("Model loaded successfully!")
     except Exception as e:
         print(f"Error loading model: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to load model: {
-                str(e)}",
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to load model: {str(e)}")
 
 
 @app.post("/predict/", response_model=PredictionResponse)
@@ -859,11 +853,7 @@ async def predict_alzheimer(
         return response
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Prediction error: {
-                str(e)}",
-        )
+        raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
 
     finally:
         if os.path.exists(temp_path):

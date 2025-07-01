@@ -51,7 +51,7 @@ def test_predict_alzheimer(mri_file_path, age, gender):
     
 if __name__ == "__main__":
     # Example usage
-    mri_file = "./cn.nii"  # Update with your file path
+    mri_file = "./ad.nii"  # Update with your file path
     age = 65.0
     gender = 0.0 
     

@@ -1,0 +1,256 @@
+CHI TIẾT PIPELINE JENKINS CHO ALZHEIMER DIAGNOSING SERVER
+
+THÔNG TIN MÔI TRƯỜNG (ENVIRONMENT VARIABLES):
+- BUILD_SCM: https://github.com/CallMeNaul/alztracker-diagnosing_server.git
+  + Repository chứa mã nguồn chính của ứng dụng
+  + Được sử dụng trong giai đoạn Checkout để lấy mã nguồn
+
+- DEPLOY_SCM: https://github.com/CallMeNaul/alztrack-deployment.git
+  + Repository chứa cấu hình deployment
+  + Được sử dụng trong giai đoạn Deploy để cập nhật cấu hình
+
+- DOCKER_USER: callmenaul
+  + Tên người dùng Docker Hub
+  + Dùng để xây dựng tên image và push lên registry
+
+- DOCKER_IMAGE: alzheimer-diagnosing-server
+  + Tên image Docker của ứng dụng
+  + Kết hợp với DOCKER_USER tạo thành tên đầy đủ: callmenaul/alzheimer-diagnosing-server
+
+- DOCKER_TAG: vX.0 (X là số build)
+  + Version của image, tự động tăng theo số build
+  + Ví dụ: v1.0, v2.0, v3.0,...
+
+- DEPLOYMENT_FILE: docker-compose.yml
+  + File cấu hình Docker Compose cho deployment
+  + Chứa thông tin về services, networks, volumes,...
+
+- SCAN_OUTPUT: vulnerabilities.txt
+  + File lưu kết quả quét bảo mật
+  + Được sử dụng bởi Trivy trong các bước scan
+
+- DEPLOY_BRANCH: main
+  + Branch chính cho deployment
+  + Mọi thay đổi deployment đều được push lên branch này
+
+CÁC GIAI ĐOẠN THỰC HIỆN (STAGES):
+
+1. Info (Thông tin hệ thống)
+   Mục đích: Kiểm tra và xác nhận môi trường thực thi pipeline
+   Các lệnh thực hiện:
+   - whoami: Hiển thị user đang thực thi pipeline
+   - pwd: Hiển thị đường dẫn thư mục hiện tại
+   - ls: Liệt kê các file trong thư mục
+   Ý nghĩa: Giúp debug khi có vấn đề về permissions hoặc đường dẫn
+
+2. Checkout (Lấy mã nguồn)
+   Mục đích: Chuẩn bị mã nguồn mới nhất cho quá trình build
+   Các bước:
+   - cleanWs(): Xóa sạch workspace để tránh xung đột
+   - Sử dụng GitSCM để clone repository:
+     + URL: BUILD_SCM
+     + Branch: main
+     + Credentials: login-github (SSH key hoặc username/password)
+   Kết quả: Có mã nguồn mới nhất trong workspace
+
+3. Check Changes (Kiểm tra thay đổi)
+   Mục đích: Tối ưu hóa pipeline bằng cách kiểm tra phạm vi thay đổi
+   Cách thực hiện:
+   - Sử dụng git diff để so sánh với commit trước
+   - Phân tích danh sách file thay đổi
+   Xử lý đặc biệt:
+   - Nếu chỉ có Jenkinsfile thay đổi:
+     + Set currentBuild.result = 'SUCCESS'
+     + Set env.ONLY_JENKINSFILE_CHANGED = 'true'
+     + Bỏ qua các stage còn lại
+   Lý do: Tránh chạy không cần thiết các bước build và deploy
+
+4. Lint Backend (Kiểm tra chất lượng code)
+   Mục đích: Đảm bảo chất lượng và tiêu chuẩn code Python
+   Công cụ: pylint
+   Các bước:
+   - Cài đặt pylint thông qua pip
+   - Chạy pylint trên file backend.py
+   Xử lý lỗi:
+   - Sử dụng || true để không dừng pipeline khi có warning
+   - Log kết quả để review sau
+   Điều kiện: Chỉ chạy khi có thay đổi ngoài Jenkinsfile
+
+5. Update Model (Cập nhật model AI)
+   Mục đích: Cập nhật model machine learning mới nhất
+   Công cụ: rclone
+   Các bước:
+   - Đọc đường dẫn model từ file model.txt (dòng đầu tiên)
+   - Sử dụng rclone để copy từ Google Drive
+   Cấu hình:
+   - Yêu cầu cấu hình rclone với Google Drive
+   - Đường dẫn model được lưu trong model.txt
+   Kết quả: Model mới được tải về workspace
+
+6. Trivy Filesystem Scan (Quét bảo mật hệ thống file)
+   Mục đích: Phát hiện các lỗ hổng bảo mật trong mã nguồn
+   Công cụ: Trivy
+   Cấu hình scan:
+   - Severity: HIGH, CRITICAL (chỉ quét lỗ hổng nghiêm trọng)
+   - Cache directory: /root/.cache/
+   - No progress: Tắt hiển thị thanh tiến trình
+   Kết quả:
+   - Lưu vào file vulnerabilities.txt
+   - Hiển thị kết quả quét
+   Xử lý: Tiếp tục pipeline ngay cả khi phát hiện lỗ hổng
+
+7. Validate Dockerfile (Kiểm tra Dockerfile)
+   Mục đích: Đảm bảo Dockerfile tuân thủ best practices
+   Công cụ: hadolint
+   Các bước kiểm tra:
+   - Cú pháp và cấu trúc Dockerfile
+   - Xác định và log base image
+   Xử lý kết quả:
+   - Log warnings và errors
+   - Tiếp tục ngay cả khi có lỗi (|| true)
+   Thông tin thu thập:
+   - Base image được sử dụng
+   - Các vi phạm best practices
+
+8. Build and Push Docker Image (Tạo và đẩy image)
+   Mục đích: Tạo container image và publish lên registry
+   Xác thực:
+   - Sử dụng credentials 'login-dockerhub'
+   - Login vào Docker Hub qua CLI
+   Các bước build:
+   - Build image với tag mới
+   - Tag format: ${DOCKER_USER}/${DOCKER_IMAGE}:${DOCKER_TAG}
+   Push image:
+   - Push lên Docker Hub
+   - Verify push thành công
+   Log thông tin:
+   - Image name và tag
+   - Kết quả push
+
+9. Trivy Image Scan (Quét bảo mật Docker image)
+   Mục đích: Kiểm tra bảo mật của container image
+   Cấu hình scan:
+   - Severity: HIGH, CRITICAL
+   - Timeout: 2700 giây (45 phút)
+   - Ignore unfixed: Bỏ qua lỗ hổng chưa có bản vá
+   Xác thực:
+   - Login vào GitHub Container Registry
+   - Sử dụng credentials 'login-ghcr'
+   Kết quả:
+   - Lưu vào file vulnerabilities.txt
+   - Hiển thị báo cáo chi tiết
+
+10. Cleanup Before Deploy (Dọn dẹp trước khi deploy)
+    Mục đích: Chuẩn bị môi trường sạch cho deployment
+    Hành động:
+    - Xóa toàn bộ workspace hiện tại
+    - Đảm bảo không có file thừa
+    Lý do:
+    - Tránh xung đột file
+    - Đảm bảo deployment sạch sẽ
+
+11. Checkout Deploy (Lấy mã nguồn deployment)
+    Mục đích: Chuẩn bị cấu hình deployment mới nhất
+    Repository:
+    - URL: DEPLOY_SCM
+    - Branch: main
+    Xác thực:
+    - Sử dụng credentials 'login-github'
+    - Đảm bảo quyền push
+    Kết quả:
+    - Có được cấu hình deployment mới nhất
+
+12. Setup Git Configuration (Cấu hình Git)
+    Mục đích: Chuẩn bị môi trường Git cho deployment
+    Kiểm tra:
+    - Xác định branch hiện tại
+    - So sánh với DEPLOY_BRANCH
+    Xử lý:
+    - Tự động chuyển về branch main nếu cần
+    - Đảm bảo đúng branch cho deployment
+
+13. Deploy to Production (Triển khai)
+    Mục đích: Cập nhật và triển khai phiên bản mới
+    Cập nhật cấu hình:
+    - Thay đổi tag trong docker-compose.yml
+    - Sử dụng sed để cập nhật version
+    Kiểm tra:
+    - Hiển thị file sau khi cập nhật
+    - Verify thay đổi
+    Git operations:
+    - Add file thay đổi
+    - Commit với message cụ thể
+    - Push lên DEPLOY_BRANCH
+    Hoàn tất:
+    - Clone lại repository chính
+    - Chuẩn bị cho lần build tiếp theo
+
+GIAI ĐOẠN KẾT THÚC (POST STAGES):
+
+1. Always (Luôn thực hiện)
+   Mục đích: Dọn dẹp và giải phóng tài nguyên
+   Đăng xuất:
+   - Docker Hub logout
+   - GitHub Container Registry logout
+   Dọn dẹp Docker:
+   - Xóa các image cũ của project
+   - Xóa các dangling images
+   - Giải phóng disk space
+   Điều kiện:
+   - Chỉ thực hiện khi có thay đổi ngoài Jenkinsfile
+   Xử lý lỗi:
+   - Log warning nếu không xóa được image
+   - Tiếp tục process ngay cả khi có lỗi
+
+2. Success (Thành công)
+   Hành động:
+   - Hiển thị thông báo thành công
+   - Log kết quả build
+   Ý nghĩa:
+   - Pipeline hoàn thành tất cả stages
+   - Không có lỗi nghiêm trọng
+
+3. Failure (Thất bại)
+   Hành động:
+   - Hiển thị thông báo thất bại
+   - Log lỗi chi tiết
+   Ý nghĩa:
+   - Có lỗi trong quá trình thực hiện
+   - Cần review logs để xác định nguyên nhân
+
+LƯU Ý QUAN TRỌNG (IMPORTANT NOTES):
+
+1. Agent Configuration
+   - Sử dụng agent với label 'local-agent'
+   - Đảm bảo agent có đủ quyền và công cụ cần thiết
+
+2. Error Handling
+   - Nhiều bước sử dụng || true
+   - Tránh pipeline fail khi có lỗi không nghiêm trọng
+   - Log đầy đủ để debug
+
+3. Security Credentials
+   - login-github: Truy cập GitHub repositories
+   - login-dockerhub: Push/pull Docker images
+   - login-ghcr: Truy cập GitHub Container Registry
+   - Đảm bảo bảo mật thông tin nhạy cảm
+
+4. Optimization
+   - Kiểm tra thay đổi để skip stages không cần thiết
+   - Sử dụng cache cho Docker builds và scans
+   - Tối ưu thời gian thực hiện
+
+5. Security Integration
+   - Trivy: Quét lỗ hổng bảo mật
+   - hadolint: Kiểm tra Dockerfile
+   - Tập trung vào các lỗ hổng nghiêm trọng
+
+6. Automated Versioning
+   - Tự động tăng version theo build number
+   - Cập nhật version trong môi trường production
+   - Tracking history qua git commits
+
+7. Pipeline Flexibility
+   - Có thể skip stages khi cần
+   - Xử lý nhiều loại thay đổi khác nhau
+   - Dễ dàng mở rộng và maintain 

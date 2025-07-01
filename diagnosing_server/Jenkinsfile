@@ -1,121 +1,258 @@
 pipeline {
-    agent any
+    agent {
+        label 'local-agent'
+    }
 
     environment {
+        BUILD_SCM = 'https://github.com/CallMeNaul/alztracker-diagnosing_server.git'
+        DEPLOY_SCM = 'https://github.com/CallMeNaul/alztrack-deployment.git'
         DOCKER_USER = 'callmenaul'
-        DOCKER_IMAGE = 'alzheimers-datahub_diagnosing-server'
-        DOCKER_TAG = "v${BUILD_NUMBER}.0"
-        // Thông tin môi trường cho Python
-        PYTHON_VERSION = '3.11'
-        // Thông tin database và model path từ Jenkins credentials
-        DB_HOST = credentials('DB_HOST')
-        DB_USER = credentials('DB_USER')
-        DB_PASSWORD = credentials('DB_PASSWORD')
-        DB_NAME = credentials('DB_NAME')
-        MODEL_PATH = credentials('MODEL_PATH')
+        DOCKER_IMAGE = 'alzheimer-diagnosing-server'
+        DOCKER_TAG = "v${env.BUILD_NUMBER}.0"
+        DEPLOYMENT_FILE = 'docker-compose.yml'
+        SCAN_OUTPUT = 'vulnerabilities.txt'
+        DEPLOY_BRANCH = 'main'
     }
 
     stages {
+        stage('Info') {
+            steps {
+                sh(label: "ℹ️ Showing system info", script: """
+                    whoami
+                    pwd
+                    ls
+                """)
+            }
+        }
+
         stage('Checkout') {
             steps {
-                // Checkout code từ repository
-                checkout scm
-                
-                // Kiểm tra thay đổi trong thư mục diagnosing_server
+                cleanWs()
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: 'main']],
+                    userRemoteConfigs: [[
+                        url: env.BUILD_SCM,
+                        credentialsId: 'login-github'
+                    ]]
+                ])
+            }
+        }
+
+        stage('Check Changes') {
+            steps {
                 script {
-                    def changes = sh(script: 'git diff --name-only HEAD^ | grep "^diagnosing_server/"', returnStatus: true)
-                    if (changes != 0) {
-                        currentBuild.result = 'NOT_BUILT'
-                        error('No changes in diagnosing_server directory. Skipping build.')
+                    def changedFiles = sh(label: "🔍 Checking file changes", script: "git diff --name-only HEAD~1 HEAD", returnStdout: true).trim().split("\n")
+                    if (changedFiles.length == 1 && changedFiles.contains("Jenkinsfile")) {
+                        echo "✨ Only Jenkinsfile was changed - Pipeline will complete successfully"
+                        currentBuild.result = 'SUCCESS'
+                        env.ONLY_JENKINSFILE_CHANGED = 'true'
+                        return
                     }
                 }
             }
         }
 
-        stage('Scan Requirements') {
+        stage('Lint Backend') {
+            when {
+                expression { return env.ONLY_JENKINSFILE_CHANGED != 'true' }
+            }
             steps {
-                dir('diagnosing_server') {
-                    script {
-                        // Kiểm tra tính hợp lệ của requirements.txt
-                        sh 'pip install pip-audit'
-                        
-                        // Quét các dependencies để tìm lỗ hổng bảo mật
-                        sh 'pip-audit -r requirements.txt || true'
-                        
-                        // Kiểm tra phiên bản của các packages
-                        sh '''
-                            echo "Checking package versions..."
-                            while IFS= read -r line || [[ -n "$line" ]]; do
-                                if [[ $line != "#"* ]] && [[ -n $line ]]; then
-                                    package=$(echo $line | cut -d'=' -f1)
-                                    pip index versions $package
-                                fi
-                            done < requirements.txt
-                        '''
-                    }
+                script {
+                    sh(label: "📦 Installing pylint", script: "pip install pylint || true")
+                    sh(label: "🔍 Running pylint", script: "pylint backend.py || true")
+                }
+            }
+        }
+
+        stage('Update Model') {
+            when {
+                expression { return env.ONLY_JENKINSFILE_CHANGED != 'true' }
+            }
+            steps {
+                script {
+                    sh(label: "📥 Downloading model", script: 'rclone copy gdrive:$(head -n 1 model.txt) .')
+                }
+            }
+        }
+
+        stage('Trivy Filesystem Scan') {
+            when {
+                expression { return env.ONLY_JENKINSFILE_CHANGED != 'true' }
+            }
+            steps {
+                script {
+                    sh(label: "🔒 Running Filesystem Security Scan", script: """
+                        docker run --rm -v trivy-db:/root/.cache/ aquasec/trivy fs --cache-dir /root/.cache/ --no-progress --severity HIGH,CRITICAL . > \${SCAN_OUTPUT}
+                        cat \${SCAN_OUTPUT}
+                    """)
                 }
             }
         }
 
         stage('Validate Dockerfile') {
+            when {
+                expression { return env.ONLY_JENKINSFILE_CHANGED != 'true' }
+            }
             steps {
-                dir('diagnosing_server') {
-                    script {
-                        // Kiểm tra cú pháp Dockerfile
-                        sh 'docker run --rm -i hadolint/hadolint < Dockerfile || true'
-                        
-                        // Kiểm tra base image updates
-                        def baseImage = sh(
-                            script: 'grep "^FROM" Dockerfile | cut -d" " -f2',
-                            returnStdout: true
-                        ).trim()
-                        sh "docker pull ${baseImage}"
-                        
-                        // Kiểm tra kích thước image
-                        sh """
-                            echo 'Estimated image size after build:'
-                            docker build -t size-check . > /dev/null
-                            docker images size-check --format '{{.Size}}'
-                            docker rmi size-check
-                        """
-                    }
+                script {
+                    sh(label: "🔍 Checking Dockerfile syntax", script: 'docker run --rm -i hadolint/hadolint < Dockerfile || true')
+                    
+                    def baseImage = sh(
+                        label: "🔍 Checking base image",
+                        script: 'grep "^FROM" Dockerfile | cut -d" " -f2',
+                        returnStdout: true
+                    ).trim()
+                    echo "📦 Base image: ${baseImage}"
                 }
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build and Push Docker Image') {
+            when {
+                expression { return env.ONLY_JENKINSFILE_CHANGED != 'true' }
+            }
             steps {
-                dir('diagnosing_server') {
-                    // Build Docker image
-                    sh "docker build -t ${DOCKER_USER}/${DOCKER_IMAGE}:${DOCKER_TAG} ."
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'login-dockerhub', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh(label: "🔑 Authenticating with Docker Hub", script: 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin')
+                    }
+            
+                    sh(label: "🏗️ Building Docker image", script: "docker build -t \${DOCKER_USER}/\${DOCKER_IMAGE}:\${DOCKER_TAG} .")
+                    sh(label: "⬆️ Pushing Docker image", script: "docker push \${DOCKER_USER}/${DOCKER_IMAGE}:\${DOCKER_TAG}")
+                    echo "✅ Image published successfully: ${DOCKER_USER}/${DOCKER_IMAGE}:${DOCKER_TAG}"
+                }
+            }
+        }
+
+        stage('Trivy Image Scan') {
+            when {
+                expression { return env.ONLY_JENKINSFILE_CHANGED != 'true' }
+            }
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'login-ghcr', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
+                        sh(label: "🔑 Authenticating with GitHub Container Registry", script: 'echo $PSW | docker login ghcr.io -u $USR --password-stdin')
+                    }
+
+                    sh(label: "🔒 Scanning Docker image", script: """
+                        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v trivy-db:/root/.cache/ aquasec/trivy image \\
+                        --cache-dir /root/.cache/ \\
+                        --no-progress \\
+                        --severity HIGH,CRITICAL \\
+                        --ignore-unfixed \\
+                        --timeout 2700s \\
+                        \${DOCKER_USER}/\${DOCKER_IMAGE}:\${DOCKER_TAG} > \${SCAN_OUTPUT}
+                    """)
+                    sh(label: "📄 Showing scan results", script: "cat ${SCAN_OUTPUT}")
+                }
+            }
+        }
+
+        stage('Cleanup Before Deploy') {
+            when {
+                expression { return env.ONLY_JENKINSFILE_CHANGED != 'true' }
+            }
+            steps {
+                cleanWs()
+            }
+        }
+
+        stage('Checkout Deploy') {
+            when {
+                expression { return env.ONLY_JENKINSFILE_CHANGED != 'true' }
+            }
+            steps {
+                script {
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: 'main']],
+                        userRemoteConfigs: [
+                            [
+                                url: env.DEPLOY_SCM,
+                                credentialsId: 'login-github'
+                            ]
+                        ]
+                    ])
+                }
+            }
+        }
+
+        stage('Setup Git Configuration') {
+            when {
+                expression { return env.ONLY_JENKINSFILE_CHANGED != 'true' }
+            }
+            steps {
+                script {
+                    def currentBranch = sh(label: "🔍 Checking current branch", script: "git rev-parse --abbrev-ref HEAD", returnStdout: true).trim()
+                    
+                    if (currentBranch != env.DEPLOY_BRANCH) {
+                        echo "Current branch is ${currentBranch}. Switching to branch ${env.DEPLOY_BRANCH}."
+                        sh(label: "🔄 Switching branch", script: "git checkout ${env.DEPLOY_BRANCH}")
+                    }
                 }
             }
         }
 
         stage('Deploy to Production') {
             when {
-                branch 'develop'
+                expression { return env.ONLY_JENKINSFILE_CHANGED != 'true' }
             }
             steps {
                 script {
-                    // Deploy to development environment
-                    sh """
-                        docker-compose up -d
-                    """
+                    sh(label: "🔄 Updating image tag", script: "sed -i 's|${env.DOCKER_USER}/${env.DOCKER_IMAGE}:v[^ ]*|${env.DOCKER_USER}/${env.DOCKER_IMAGE}:${env.DOCKER_TAG}|g' ${DEPLOYMENT_FILE}")
+                    sh(label: "📄 Showing deployment configuration", script: "cat ${DEPLOYMENT_FILE}")
+                    sh(label: "🚀 Pushing deployment changes", script: """
+                        git add ${DEPLOYMENT_FILE}
+                        git status
+                        git commit -m "Update deployment file to use version ${DOCKER_TAG}"
+                        git push origin ${DEPLOY_BRANCH}
+                    """)
                 }
+                checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: 'main']],
+                        userRemoteConfigs: [
+                            [
+                                url: env.BUILD_SCM,
+                                credentialsId: 'login-github'
+                            ]
+                        ]
+                    ])
             }
         }
     }
 
     post {
+        always {
+            script {
+                if (env.ONLY_JENKINSFILE_CHANGED != 'true') {
+                    sh(label: "🧹 Logging out from registries", script: """
+                        docker logout
+                        docker logout ghcr.io
+                    """)
+                    
+                    try {
+                        sh(label: "🗑️ Cleaning up old images", script: """
+                            for tag in \$(docker images "${DOCKER_USER}/${DOCKER_IMAGE}" --format "{{.Tag}}" | grep -v "${DOCKER_TAG}"); do
+                                echo "   Removing ${DOCKER_USER}/${DOCKER_IMAGE}:\$tag"
+                                docker rmi "${DOCKER_USER}/${DOCKER_IMAGE}:\$tag" || true
+                            done
+
+                            echo "   Removing dangling images..."
+                            docker image prune -f
+                        """)
+                    } catch (err) {
+                        echo "⚠️ Warning: Failed to clean up some Docker images: ${err.message}"
+                    }
+                }
+            }
+        }
         success {
-            echo 'Pipeline completed successfully!'
+            echo '✅ Pipeline completed successfully!'
         }
         failure {
-            echo 'Pipeline failed!'
-        }
-        always {
-            
+            echo '❌ Pipeline failed!'
         }
     }
 }

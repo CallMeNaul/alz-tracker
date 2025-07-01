@@ -1,7 +1,7 @@
 FROM node:18-alpine AS builder
 
 # Thêm các dependencies cần thiết cho build
-RUN apk add --no-cache g++ make python3
+RUN apk add --no-cache python3 make g++
 
 WORKDIR /build
 
@@ -61,12 +61,9 @@ USER nginx
 # Mở cổng
 EXPOSE 80
 
-RUN echo '#!/bin/sh\nwget -qO- http://localhost:80/ || exit 1' > healthcheck.sh && \
-  chmod +x healthcheck.sh
-
 # Cấu hình kiểm tra sức khỏe
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD ["./healthcheck.sh"]
+  CMD wget -qO- http://localhost:80/ || exit 1
 
 # Sử dụng dumb-init để xử lý signals đúng cách
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]

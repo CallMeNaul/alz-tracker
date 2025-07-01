@@ -6,13 +6,13 @@ LABEL maintainer="Alzheimer's Data Hub" \
   version="1.0"
 
 # Cài đặt các gói bảo mật cần thiết
-# Tạo thư mục cho các script khởi tạo và data
-
 RUN apk add --no-cache \
   su-exec \
   tzdata \
-  && rm -rf /var/cache/apk/* \
-  && mkdir -p /docker-entrypoint-initdb.d \
+  && rm -rf /var/cache/apk/*
+
+# Tạo thư mục cho các script khởi tạo và data
+RUN mkdir -p /docker-entrypoint-initdb.d \
   && mkdir -p /var/lib/postgresql/data \
   && chown -R postgres:postgres /var/lib/postgresql/data \
   && chmod 700 /var/lib/postgresql/data
@@ -37,10 +37,5 @@ EXPOSE 5432
 USER postgres
 
 # Cấu hình kiểm tra sức khỏe với các khoảng thời gian phù hợp
-RUN echo '#!/bin/sh\n\
-  pg_isready -U postgres -d "${POSTGRES_DB:-postgres}" || exit 1' > healthcheck.sh && \
-  chmod +x healthcheck.sh
-
-# Cấu hình HEALTHCHECK sử dụng script
 HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=3 \
-  CMD ["healthcheck.sh"]
+  CMD pg_isready -U postgres -d ${POSTGRES_DB:-postgres} || exit 1

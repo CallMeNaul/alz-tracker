@@ -4,16 +4,12 @@ import { Pool } from 'pg';
 // Configuration for local development and production
 const config = {
   development: {
-    user: process.env.DB_USER, // || 'postgres',
-    password: process.env.DB_PASSWORD, // || 'postgres',
-    host: process.env.DB_HOST, // || 'localhost',
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    host: process.env.DB_HOST,
     port: parseInt(process.env.DB_PORT || '5432'),
-    database: process.env.DB_NAME, // || 'alzheimer_diagnosing',
+    database: process.env.DB_NAME,
     ssl: false
-    /*  },
-      production: {
-        connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false }*/
   }
 };
 
